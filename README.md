@@ -55,12 +55,12 @@ bam2prof is a C++ tool used by AdDeam that is fast and robust for generating dam
 ## To run AdDeam, follow these steps:
 
 1. Generate Damage Profiles
-Use the bam2prof.py wrapper to generate damage profiles from a list of BAM files. Specify the output directory for the profiles:
+Use the `bam2prof.py` wrapper to generate damage profiles from a list of BAM files. Specify the output directory for the profiles:
 
        python bam2prof.py -o profilesDir listOfBamFiles.txt
 
 2. Cluster and Plot
-Once the profiles are generated, cluster and visualize them using cluster.py. Specify the input directory for the profiles and an output directory for the plots:
+Once the profiles are generated, cluster and visualize them using `cluster.py`. Specify the input directory for the profiles and an output directory for the plots:
 
        python cluster.py -i profilesDir -o plotsDir
 
