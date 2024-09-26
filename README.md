@@ -30,5 +30,40 @@ AdDeam offers a variety of key features that make it a robust solution for damag
     - Representative damage profiles for each cluster.
     - Principal Component Analysis (PCA) to visually separate clusters for easy identification of distinct damage levels.
 
-## How to Install
-(to be continued)
+
+## Installation
+
+You can install AdDeam using either a Conda package or from source. Follow the instructions below based on your preferred method.
+
+### 1. Install with Conda (via Bioconda)
+To install AdDeam using Conda, simply run:
+
+    conda install -c bioconda addeam
+
+### 1. Install from Source
+
+    git clone https://github.com/LouisPwr/AdDeam
+    cd src && make
+    cd ..
+    pip install -r requirements.txt
+
+Note:
+bam2prof is a C++ tool used by AdDeam that is fast and robust for generating damage profiles from BAM files.
+
+
+
+## To run AdDeam, follow these steps:
+
+1. Generate Damage Profiles
+Use the bam2prof.py wrapper to generate damage profiles from a list of BAM files. Specify the output directory for the profiles:
+
+       python bam2prof.py -o profilesDir listOfBamFiles.txt
+
+2. Cluster and Plot
+Once the profiles are generated, cluster and visualize them using cluster.py. Specify the input directory for the profiles and an output directory for the plots:
+
+       python cluster.py -i profilesDir -o plotsDir
+
+
+
+
