@@ -185,7 +185,8 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
     sample_ids = np.arange(1, len(sample_names_sorted) + 1)
     sample_ids_str = [f'{id:0{len(str(len(sample_names)))}d}' for id in sample_ids]
     # Save probabilities, sample names, and IDs to a TSV file
-    save_probs_ids_tsv(probabilities_sorted, sample_names_sorted, sample_ids_str, path)
+    filename=f"cluster_probabilities_ids_k{n_components}.tsv"
+    save_probs_ids_tsv(probabilities_sorted, sample_names_sorted, sample_ids_str, path, filename)
     # Initialize PdfPages to save plots into a multi-page PDF
     with PdfPages(f'{path}/{pdf_filename}') as pdf:
         # Number of full plots needed (each with up to three columns)
@@ -253,52 +254,6 @@ def find_matching_files(damage_dir, sample_names):
         if fivep_file and threep_file:
             file_dict[sample_name] = {'5p': fivep_file, '3p': threep_file}
     return file_dict
-
-# def plot_weighted_profiles(probabilities, sample_names, damage_paths, plot_path, reverse, method, n_components, pdf_filename="weighted_profiles.pdf"):
-#     """
-#     Calculate and plot weighted representative damage profiles based on the cluster probabilities,
-#     and save the plots to a multi-page PDF.
-#     """
-#     pdf_path = f'{plot_path}/{pdf_filename}'
-#     with PdfPages(pdf_path) as pdf:
-#         for cluster in range(n_components):
-#             print("cluster", cluster)
-#             weighted_combined_data = {i: [] for i in range(10)}
-#             total_prob = 0
-#             for i, sample_name in enumerate(sample_names):
-#                 print(i, sample_name)
-#                 prob = probabilities[i, cluster]
-#                 if prob > 0:
-#                     file_dict = find_matching_files(damage_paths, [sample_name])
-#                     if sample_name not in file_dict:
-#                         continue
-#                     fivep_file = file_dict[sample_name]['5p']
-#                     threep_file = file_dict[sample_name]['3p']
-#                     fivep_data = pd.read_csv(fivep_file, delimiter='\t')["C>T"]
-#                     threep_data = pd.read_csv(threep_file, delimiter='\t')["G>A"]
-#                     if reverse:
-#                         threep_data_reversed = threep_data.iloc[::-1].reset_index(drop=True)
-#                     else:
-#                         threep_data_reversed = threep_data
-#                     combined_data = np.concatenate([fivep_data, threep_data_reversed])
-#                     for pos in range(10):
-#                         print("pos", pos)
-#                         print(type(weighted_combined_data[pos]))
-#                         if len(weighted_combined_data[pos]) == 0:
-#                             weighted_combined_data[pos] = combined_data[pos] * prob
-#                         else:
-#                             weighted_combined_data[pos] += combined_data[pos] * prob
-#                     total_prob += prob
-#             for pos in range(10):
-#                 weighted_combined_data[pos] /= total_prob
-#             fig, axs = plt.subplots(1, 2, figsize=(8, 3))
-#             plot_prof_substitutions(axs[0], weighted_combined_data, substitution_type='C>T', color='red', positions_range=(0, 5), xlabel="Position from 5' end")
-#             plot_prof_substitutions(axs[1], weighted_combined_data, substitution_type='G>A', color='blue', positions_range=(5, 10), xlabel="Position from 3' end")
-#             plt.suptitle(f'Representative Substitution Frequencies for Cluster {cluster + 1} ({method})')
-#             plt.tight_layout()
-#             pdf.savefig(fig)
-#             plt.close(fig)
-#     print(f"Weighted profiles saved to {pdf_path}")
 
 def plot_weighted_profiles(probabilities, sample_names, damage_paths, plot_path, reverse, method, n_components, pdf_filename="weighted_profiles.pdf"):
     """
