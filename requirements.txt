@@ -1,0 +1,7 @@
+numpy
+pandas
+matplotlib
+scikit-learn
+PyPDF2
+subprocess32; platform_system == "Linux" or platform_system == "Darwin"  # Use subprocess32 for Python 2 on Linux/macOS
+concurrent.futures; python_version < '3.2'
