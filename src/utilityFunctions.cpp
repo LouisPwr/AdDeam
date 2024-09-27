@@ -417,32 +417,189 @@ vector<vector<unsigned int>> initializeDimerVectors(int maxLength, int innerSize
 
 
 
+// void generateDamageProfile( const std::string& outDir, const std::string& bamfiletopen, const std::string& refId, int lengthMaxToPrint, bool dpFormat, bool hFormat, bool allStr, bool singAnddoubleStr, bool doubleStr, bool singleStr, bool endo, bool genomeFileB, bool cpg, double errorToRemove, bool failsafe, bool phred, const std::vector<std::vector<unsigned int>>& typesOfDimer5pSingle, const std::vector<std::vector<unsigned int>>& typesOfDimer5pDouble, const std::vector<std::vector<unsigned int>>& typesOfDimer5p, const std::vector<std::vector<unsigned int>>& typesOfDimer5p_cpg, const std::vector<std::vector<unsigned int>>& typesOfDimer5p_noncpg, const std::vector<std::vector<unsigned int>>& typesOfDimer3pSingle, const std::vector<std::vector<unsigned int>>& typesOfDimer3pDouble, const std::vector<std::vector<unsigned int>>& typesOfDimer3p, const std::vector<std::vector<unsigned int>>& typesOfDimer3p_cpg, const std::vector<std::vector<unsigned int>>& typesOfDimer3p_noncpg) {
+//     std::string file5p, file3p;
+//     std::string file5pDefault, file3pDefault;  // These should be defined or passed as parameters
+
+//     // Creating the outdir
+//     if (outDir != "/dev/stdout") {
+//         std::string command = "mkdir -p " + outDir;
+//         int result = system(command.c_str());
+//         if (result != 0) {
+//             std::cerr << "Failed to create output directory: " << outDir << std::endl;
+//         }
+//     } 
+
+//     // Retrieving the basename of the bam file that is read
+//     std::string bamfiletopenBase = bamfiletopen.substr(bamfiletopen.find_last_of("/\\") + 1);
+//     std::string::size_type const p(bamfiletopenBase.find_last_of('.'));
+//     std::string file_base = bamfiletopenBase.substr(0, p);
+
+//     // Set up file names
+//     if (outDir == "/dev/stdout") {
+//         file5p = file_base + "_" + refId + "_5p.prof";
+//         file3p = file_base + "_" + refId + "_3p.prof";
+//     } else {
+//         file5p = outDir + "/" + file_base + "_" + refId + "_5p.prof";
+//         file3p = outDir + "/" + file_base + "_" + refId + "_3p.prof";
+//     }
+
+//     // Open 5' file
+//     std::ofstream file5pFP(file5p.c_str());
+//     if (!file5pFP.is_open()) {
+//         std::cerr << "Unable to write to 5p file " << file5p << std::endl;
+//         return;
+//     }
+
+//     // Write header for 5' file
+//     if (dpFormat) file5pFP << "\t";
+//     if (hFormat) file5pFP << "pos\t";
+//     file5pFP << "A>C\tA>G\tA>T\tC>A\tC>G\tC>T\tG>A\tG>C\tG>T\tT>A\tT>C\tT>G" << std::endl;
+
+//     // Choose the appropriate 5' dimer type
+//     const std::vector<std::vector<unsigned int>>* typesOfDimer5pToUse;
+//     if (endo) {
+//         typesOfDimer5pToUse = doubleStr ? &typesOfDimer5pDouble : &typesOfDimer5pSingle;
+//     } else {
+//         typesOfDimer5pToUse = &typesOfDimer5p;
+//     }
+//     if (genomeFileB) {
+//         typesOfDimer5pToUse = cpg ? &typesOfDimer5p_cpg : &typesOfDimer5p_noncpg;
+//     }
+
+//     // Write 5' profile data
+//     for (int l = 0; l < lengthMaxToPrint; l++) {
+//         if (dpFormat) file5pFP << l << "\t";
+//         if (hFormat) file5pFP << printIntAsWhitePaddedString(l, int(log10(lengthMaxToPrint)) + 1) << "\t";
+
+//         for (int n1 = 0; n1 < 4; n1++) {   
+//             int totalObs = 0;
+//             for (int n2 = 0; n2 < 4; n2++) {   
+//                 totalObs += (*typesOfDimer5pToUse)[l][4 * n1 + n2];
+//             }
+
+//             for (int n2 = 0; n2 < 4; n2++) {   
+//                 if (n1 == n2) continue;
+                
+//                 double ratio = MAX(0.0, returnRatioFS((*typesOfDimer5pToUse)[l][4 * n1 + n2], totalObs, errorToRemove, failsafe));
+                
+//                 if (allStr || 
+//                     (singAnddoubleStr && ((n1 == 1 && n2 == 3) || (n1 == 2 && n2 == 0))) ||
+//                     (doubleStr && n1 == 1 && n2 == 3) ||
+//                     (singleStr && n1 == 1 && n2 == 3)) {
+                    
+//                     if (dpFormat) file5pFP << dbl2log(ratio, phred) << " [0..0]";
+//                     else if (hFormat) file5pFP << printDoubleAsWhitePaddedString(ratio, 1, 5);
+//                     else file5pFP << dbl2log(ratio, phred);
+//                 } else {
+//                     if (dpFormat) file5pFP << (phred ? "-Inf" : "0.0") << " [0..0]";
+//                     else if (hFormat) file5pFP << printDoubleAsWhitePaddedString(0.0, 1, 5);
+//                     else file5pFP << (phred ? "-Inf" : "0.0");
+//                 }
+
+//                 if (!(n1 == 3 && n2 == 2)) file5pFP << "\t";
+//             }
+//         }
+//         file5pFP << std::endl;
+//     }
+
+//     file5pFP.close();
+
+//     // Open 3' file
+//     std::ofstream file3pFP;
+//     if (outDir == "/dev/stdout") {
+//         file3pFP.open(file3p.c_str(), std::ofstream::out | std::ofstream::app);
+//     } else {
+//         file3pFP.open(file3p.c_str());
+//     }
+
+//     if (!file3pFP.is_open()) {
+//         std::cerr << "Unable to write to 3p file " << file3p << std::endl;
+//         return;
+//     }
+
+//     // Write header for 3' file
+//     if (dpFormat) file3pFP << "\t";
+//     if (hFormat) file3pFP << "pos\t";
+//     file3pFP << "A>C\tA>G\tA>T\tC>A\tC>G\tC>T\tG>A\tG>C\tG>T\tT>A\tT>C\tT>G" << std::endl;
+
+//     // Choose the appropriate 3' dimer type
+//     const std::vector<std::vector<unsigned int>>* typesOfDimer3pToUse;
+//     if (endo) {
+//         typesOfDimer3pToUse = doubleStr ? &typesOfDimer3pDouble : &typesOfDimer3pSingle;
+//     } else {
+//         typesOfDimer3pToUse = &typesOfDimer3p;
+//     }
+//     if (genomeFileB) {
+//         typesOfDimer3pToUse = cpg ? &typesOfDimer3p_cpg : &typesOfDimer3p_noncpg;
+//     }
+
+//     // Write 3' profile data
+//     for (int le = 0; le < lengthMaxToPrint; le++) {
+//         int l = le;
+//         if (dpFormat) {
+//             l = lengthMaxToPrint - 1 - le;
+//             file3pFP << (l == 0 ? "" : "-") << l << "\t";
+//         }
+//         if (hFormat) {
+//             file3pFP << printIntAsWhitePaddedString(l, int(log10(lengthMaxToPrint)) + 1) << "\t";
+//         }
+
+//         for (int n1 = 0; n1 < 4; n1++) {   
+//             int totalObs = 0;
+//             for (int n2 = 0; n2 < 4; n2++) {   
+//                 totalObs += (*typesOfDimer3pToUse)[l][4 * n1 + n2];
+//             }
+
+//             for (int n2 = 0; n2 < 4; n2++) {   
+//                 if (n1 == n2) continue;
+                
+//                 double ratio = MAX(0.0, returnRatioFS((*typesOfDimer3pToUse)[l][4 * n1 + n2], totalObs, errorToRemove, failsafe));
+                
+//                 if (allStr || 
+//                     (singAnddoubleStr && ((n1 == 1 && n2 == 3) || (n1 == 2 && n2 == 0))) ||
+//                     (doubleStr && n1 == 2 && n2 == 0) ||
+//                     (singleStr && n1 == 1 && n2 == 3)) {
+                    
+//                     if (dpFormat) file3pFP << dbl2log(ratio, phred) << " [0..0]";
+//                     else if (hFormat) file3pFP << printDoubleAsWhitePaddedString(ratio, 1, 5);
+//                     else file3pFP << dbl2log(ratio, phred);
+//                 } else {
+//                     if (dpFormat) file3pFP << (phred ? "-Inf" : "0.0") << " [0..0]";
+//                     else if (hFormat) file3pFP << printDoubleAsWhitePaddedString(0.0, 1, 5);
+//                     else file3pFP << (phred ? "-Inf" : "0.0");
+//                 }
+
+//                 if (!(n1 == 3 && n2 == 2)) file3pFP << "\t";
+//             }
+//         }
+//         file3pFP << std::endl;
+//     }
+
+//     file3pFP.close();
+// }
+
 void generateDamageProfile( const std::string& outDir, const std::string& bamfiletopen, const std::string& refId, int lengthMaxToPrint, bool dpFormat, bool hFormat, bool allStr, bool singAnddoubleStr, bool doubleStr, bool singleStr, bool endo, bool genomeFileB, bool cpg, double errorToRemove, bool failsafe, bool phred, const std::vector<std::vector<unsigned int>>& typesOfDimer5pSingle, const std::vector<std::vector<unsigned int>>& typesOfDimer5pDouble, const std::vector<std::vector<unsigned int>>& typesOfDimer5p, const std::vector<std::vector<unsigned int>>& typesOfDimer5p_cpg, const std::vector<std::vector<unsigned int>>& typesOfDimer5p_noncpg, const std::vector<std::vector<unsigned int>>& typesOfDimer3pSingle, const std::vector<std::vector<unsigned int>>& typesOfDimer3pDouble, const std::vector<std::vector<unsigned int>>& typesOfDimer3p, const std::vector<std::vector<unsigned int>>& typesOfDimer3p_cpg, const std::vector<std::vector<unsigned int>>& typesOfDimer3p_noncpg) {
     std::string file5p, file3p;
-    std::string file5pDefault, file3pDefault;  // These should be defined or passed as parameters
+    std::string file5pDefault, file3pDefault;
 
-    // Creating the outdir
+    // Creating the output directory
     if (outDir != "/dev/stdout") {
         std::string command = "mkdir -p " + outDir;
         int result = system(command.c_str());
         if (result != 0) {
             std::cerr << "Failed to create output directory: " << outDir << std::endl;
         }
-    } 
+    }
 
-    // Retrieving the basename of the bam file that is read
+    // Retrieving the basename of the bam file
     std::string bamfiletopenBase = bamfiletopen.substr(bamfiletopen.find_last_of("/\\") + 1);
     std::string::size_type const p(bamfiletopenBase.find_last_of('.'));
     std::string file_base = bamfiletopenBase.substr(0, p);
 
     // Set up file names
-    if (outDir == "/dev/stdout") {
-        file5p = file_base + "_" + refId + "_5p.prof";
-        file3p = file_base + "_" + refId + "_3p.prof";
-    } else {
-        file5p = outDir + "/" + file_base + "_" + refId + "_5p.prof";
-        file3p = outDir + "/" + file_base + "_" + refId + "_3p.prof";
-    }
+    file5p = outDir + "/" + file_base + "_" + refId + "_5p.prof";
+    file3p = outDir + "/" + file_base + "_" + refId + "_3p.prof";
 
     // Open 5' file
     std::ofstream file5pFP(file5p.c_str());
@@ -457,11 +614,9 @@ void generateDamageProfile( const std::string& outDir, const std::string& bamfil
     file5pFP << "A>C\tA>G\tA>T\tC>A\tC>G\tC>T\tG>A\tG>C\tG>T\tT>A\tT>C\tT>G" << std::endl;
 
     // Choose the appropriate 5' dimer type
-    const std::vector<std::vector<unsigned int>>* typesOfDimer5pToUse;
+    const std::vector<std::vector<unsigned int>>* typesOfDimer5pToUse = &typesOfDimer5p;
     if (endo) {
         typesOfDimer5pToUse = doubleStr ? &typesOfDimer5pDouble : &typesOfDimer5pSingle;
-    } else {
-        typesOfDimer5pToUse = &typesOfDimer5p;
     }
     if (genomeFileB) {
         typesOfDimer5pToUse = cpg ? &typesOfDimer5p_cpg : &typesOfDimer5p_noncpg;
@@ -480,21 +635,23 @@ void generateDamageProfile( const std::string& outDir, const std::string& bamfil
 
             for (int n2 = 0; n2 < 4; n2++) {   
                 if (n1 == n2) continue;
-                
+
                 double ratio = MAX(0.0, returnRatioFS((*typesOfDimer5pToUse)[l][4 * n1 + n2], totalObs, errorToRemove, failsafe));
-                
-                if (allStr || 
-                    (singAnddoubleStr && ((n1 == 1 && n2 == 3) || (n1 == 2 && n2 == 0))) ||
-                    (doubleStr && n1 == 1 && n2 == 3) ||
-                    (singleStr && n1 == 1 && n2 == 3)) {
+
+                // Abort if any NaN is found
+                if (std::isnan(ratio)) {
+                    file5pFP.close();
+                    std::remove(file5p.c_str());
+                    std::remove(file3p.c_str());  // Ensure both files are deleted
+                    return;  // Stop execution immediately
+                }
+
+                if (allStr || (singAnddoubleStr && ((n1 == 1 && n2 == 3) || (n1 == 2 && n2 == 0))) || 
+                    (doubleStr && n1 == 1 && n2 == 3) || (singleStr && n1 == 1 && n2 == 3)) {
                     
-                    if (dpFormat) file5pFP << dbl2log(ratio, phred) << " [0..0]";
-                    else if (hFormat) file5pFP << printDoubleAsWhitePaddedString(ratio, 1, 5);
-                    else file5pFP << dbl2log(ratio, phred);
+                    file5pFP << dbl2log(ratio, phred);
                 } else {
-                    if (dpFormat) file5pFP << (phred ? "-Inf" : "0.0") << " [0..0]";
-                    else if (hFormat) file5pFP << printDoubleAsWhitePaddedString(0.0, 1, 5);
-                    else file5pFP << (phred ? "-Inf" : "0.0");
+                    file5pFP << (phred ? "-Inf" : "0.0");
                 }
 
                 if (!(n1 == 3 && n2 == 2)) file5pFP << "\t";
@@ -555,6 +712,14 @@ void generateDamageProfile( const std::string& outDir, const std::string& bamfil
                 if (n1 == n2) continue;
                 
                 double ratio = MAX(0.0, returnRatioFS((*typesOfDimer3pToUse)[l][4 * n1 + n2], totalObs, errorToRemove, failsafe));
+
+                // Abort if any NaN is found
+                if (std::isnan(ratio)) {
+                    file3pFP.close();
+                    std::remove(file5p.c_str());
+                    std::remove(file3p.c_str());  // Ensure both files are deleted
+                    return;  // Stop execution immediately
+                }
                 
                 if (allStr || 
                     (singAnddoubleStr && ((n1 == 1 && n2 == 3) || (n1 == 2 && n2 == 0))) ||

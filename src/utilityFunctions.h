@@ -5,11 +5,13 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
-#include <cstring>
 #include <set>
 #include <ctype.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+
+#include <fstream>
+#include <cstdio> 
 
 #include <sys/types.h>
 
