@@ -195,7 +195,8 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             start_idx = plot_idx * max_samples_per_plot
             end_idx = min(start_idx + max_samples_per_plot, len(sample_names_sorted))
             samples_on_plot = end_idx - start_idx
-            columns_on_plot = min(len(sample_names_sorted)//max_samples_per_column + 1, columns_per_plot)
+            #columns_on_plot = min(len(sample_names_sorted)//max_samples_per_column + 1, columns_per_plot)
+            columns_on_plot = min(samples_on_plot//max_samples_per_column + 1, columns_per_plot)
             sample_ids_on_plot = sample_ids_str[start_idx:end_idx]  # Top to bottom order now
             probabilities_on_plot = probabilities_sorted[start_idx:end_idx]  # Top to bottom order now
             cluster_probabilities = {i: [] for i in range(n_components)}
