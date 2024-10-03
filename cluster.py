@@ -44,7 +44,7 @@ def create_plot_directories(base_path, method, k_iter):
     os.makedirs(method_plot_path, exist_ok=True)
     return method_plot_path
 
-def save_probs_ids_tsv(probabilities, sample_names, sample_ids, plot_path, filename="cluster_probabilities_with_ids.tsv"):
+def save_probs_ids_tsv(probabilities, sample_names, sample_ids, sample_mapping_nums, plot_path, filename="cluster_probabilities_with_ids.tsv"):
     """
     Save the probabilities matrix to a TSV file, where each row corresponds to a sample name and ID,
     and each column represents a cluster, with values as the cluster probabilities.
@@ -54,6 +54,7 @@ def save_probs_ids_tsv(probabilities, sample_names, sample_ids, plot_path, filen
     df = pd.DataFrame(probabilities, columns=cluster_columns)
     df.insert(0, 'SampleID', sample_ids)
     df.insert(1, 'SampleName', sample_names)
+    df.insert(2, "AlignedFrags", sample_mapping_nums)
     tsv_path = f'{plot_path}/{filename}'
     df.to_csv(tsv_path, sep='\t', index=False)
     print(f"Cluster probabilities with IDs saved to {tsv_path}")
@@ -137,38 +138,136 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
         plt.close(fig)
     print(f"PCA gradient plot saved to {pdf_path}")
 
-def perform_gmm(combined_matrix, n_components=2, max_iter=1000, n_init=1000, init_params='random', tol=1e-3, random_state=1):
+def perform_gmm(combined_matrix, n_components=2, max_iter=10000, n_init=1000, tol=1e-4, random_state=1, covariance_type='spherical', reg_covar=1e-3):
     """
     Perform Gaussian Mixture Modeling (GMM) on the combined matrix and return the probabilities of cluster assignment.
     """
+    # min_vals and max_vals in log space
     min_vals = np.min(combined_matrix, axis=0)
     max_vals = np.max(combined_matrix, axis=0)
+    
+    # Convert min and max values from log space to linear space
+    min_vals_lin = np.exp(min_vals)
+    max_vals_lin = np.exp(max_vals)
+    
     if n_components == 2:
+        # Compute the arithmetic mean in linear space
         mean_1 = min_vals
-        mean_2 = (min_vals + max_vals) / 2
+        #mean_2 = max_vals  # Arithmetic mean in linear space, converted back to log
+        mean_2 = np.log((min_vals_lin + max_vals_lin) / 2)  # Arithmetic mean in linear space, converted back to log
         means_init = np.vstack([mean_1, mean_2])
+    
     elif n_components == 3:
         mean_1 = min_vals
-        mean_2 = (min_vals + max_vals) / 2
+        mean_2 = np.log((min_vals_lin + max_vals_lin) / 2)  # Arithmetic mean
         mean_3 = max_vals
         means_init = np.vstack([mean_1, mean_2, mean_3])
+    
     elif n_components > 3:
         means_init = np.zeros((n_components, combined_matrix.shape[1]))
         means_init[0] = min_vals
         means_init[-1] = max_vals
+        
+        # Distribute other means evenly between min and max in linear space
         for i in range(1, n_components - 1):
             alpha = i / (n_components - 1)
-            means_init[i] = min_vals + alpha * (max_vals - min_vals)
+            mean_lin = (1 - alpha) * min_vals_lin + alpha * max_vals_lin  # Linear interpolation in linear space
+            means_init[i] = np.log(mean_lin)  # Convert back to log space
+
     else:
         raise ValueError("n_components must be greater than or equal to 2.")
+    
     gmm_model = GaussianMixture(
         n_components=n_components, max_iter=max_iter, n_init=n_init,
-        means_init=means_init, init_params=init_params, tol=tol,
-        random_state=random_state, covariance_type='diag', reg_covar=1e-3)
+        means_init=means_init, tol=tol,
+        random_state=random_state, covariance_type=covariance_type, reg_covar=reg_covar)
     gmm_model.fit(combined_matrix)
     cluster_assignments = gmm_model.predict(combined_matrix)
     probabilities = gmm_model.predict_proba(combined_matrix)
-    return gmm_model, cluster_assignments, probabilities
+    probabilities_rounded = np.round(probabilities, 4)
+    row_sums = np.sum(probabilities_rounded, axis=1)
+    adjustments = 1 - row_sums
+    max_indices = np.argmax(probabilities_rounded, axis=1)  # Find the index of the highest value in each row
+    probabilities_rounded[np.arange(probabilities_rounded.shape[0]), max_indices] += adjustments  # Add the difference to the highest probability in each row
+    return gmm_model, cluster_assignments, probabilities_rounded
+
+# def perform_gmm(combined_matrix, n_components=2, max_iter=10000, n_init=1000, tol=1e-4, random_state=1, init_params='random', covariance_type='spherical', reg_covar=1e-3):
+#     """
+#     Perform Gaussian Mixture Modeling (GMM) on the combined matrix and return the probabilities of cluster assignment.
+#     """
+#     min_vals = np.min(combined_matrix, axis=0)
+#     max_vals = np.max(combined_matrix, axis=0)
+#     if n_components == 2:
+#         mean_1 = min_vals
+#         mean_2 = (min_vals + max_vals) / 2
+#         means_init = np.vstack([mean_1, mean_2])
+#     elif n_components == 3:
+#         mean_1 = min_vals
+#         mean_2 = (min_vals + max_vals) / 2
+#         mean_3 = max_vals
+#         means_init = np.vstack([mean_1, mean_2, mean_3])
+#     elif n_components > 3:
+#         means_init = np.zeros((n_components, combined_matrix.shape[1]))
+#         means_init[0] = min_vals
+#         means_init[-1] = max_vals
+#         for i in range(1, n_components - 1):
+#             alpha = i / (n_components - 1)
+#             means_init[i] = min_vals + alpha * (max_vals - min_vals)
+#     else:
+#         raise ValueError("n_components must be greater than or equal to 2.")
+#     gmm_model = GaussianMixture(
+#         n_components=n_components, max_iter=max_iter, n_init=n_init, init_params=init_params,
+#         means_init=means_init, tol=tol,
+#         random_state=random_state, covariance_type=covariance_type, reg_covar=reg_covar)
+#     gmm_model.fit(combined_matrix)
+#     cluster_assignments = gmm_model.predict(combined_matrix)
+#     probabilities = gmm_model.predict_proba(combined_matrix)
+#     probabilities_rounded = np.round(probabilities, 4)
+#     row_sums = np.sum(probabilities_rounded, axis=1)
+#     adjustments = 1 - row_sums
+#     max_indices = np.argmax(probabilities_rounded, axis=1)  # Find the index of the highest value in each row
+#     probabilities_rounded[np.arange(probabilities_rounded.shape[0]), max_indices] += adjustments  # Add the difference to the highest probability in each row
+#     return gmm_model, cluster_assignments, probabilities_rounded
+
+# def perform_gmm(combined_matrix, n_components=2, max_iter=1000, n_init=1000, init_params='random', tol=1e-3, random_state=1):
+#     """
+#     Perform Gaussian Mixture Modeling (GMM) on the combined matrix and return the probabilities of cluster assignment.
+#     """
+#     min_vals = np.min(combined_matrix, axis=0)
+#     max_vals = np.max(combined_matrix, axis=0)
+#     if n_components == 2:
+#         mean_1 = min_vals
+#         mean_2 = (min_vals + max_vals) / 2
+#         means_init = np.vstack([mean_1, mean_2])
+#     elif n_components == 3:
+#         mean_1 = min_vals
+#         mean_2 = (min_vals + max_vals) / 2
+#         mean_3 = max_vals
+#         means_init = np.vstack([mean_1, mean_2, mean_3])
+#     elif n_components > 3:
+#         means_init = np.zeros((n_components, combined_matrix.shape[1]))
+#         means_init[0] = min_vals
+#         means_init[-1] = max_vals
+#         for i in range(1, n_components - 1):
+#             alpha = i / (n_components - 1)
+#             means_init[i] = min_vals + alpha * (max_vals - min_vals)
+#     else:
+#         raise ValueError("n_components must be greater than or equal to 2.")
+#     gmm_model = GaussianMixture(
+#         n_components=n_components, max_iter=max_iter, n_init=n_init,
+#         means_init=means_init, init_params=init_params, tol=tol,
+#         random_state=random_state, covariance_type='diag', reg_covar=1e-3)
+#     gmm_model.fit(combined_matrix)
+#     cluster_assignments = gmm_model.predict(combined_matrix)
+#     probabilities = gmm_model.predict_proba(combined_matrix)
+#     return gmm_model, cluster_assignments, probabilities
+
+def extract_number_after_n(filename):
+    # Split the string by '_n' and take the last part
+    try:
+        return int(filename.split('_n')[-1])  # Convert the last part to an integer
+    except (ValueError, IndexError):
+        return None  # Return None if the format is incorrect or conversion fails
 
 def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path, n_components=2, pdf_filename="cluster_report.pdf"):
     """
@@ -181,12 +280,13 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
     sorted_indices = np.lexsort((-np.max(probabilities, axis=1), assigned_clusters))
     probabilities_sorted = probabilities[sorted_indices]
     sample_names_sorted = np.array(sample_names)[sorted_indices]
+    sample_mapping_nums = np.array([extract_number_after_n(name) for name in sample_names_sorted])
     #assigned_clusters_sorted = assigned_clusters[sorted_indices]
     sample_ids = np.arange(1, len(sample_names_sorted) + 1)
     sample_ids_str = [f'{id:0{len(str(len(sample_names)))}d}' for id in sample_ids]
     # Save probabilities, sample names, and IDs to a TSV file
     filename=f"cluster_probabilities_ids_k{n_components}.tsv"
-    save_probs_ids_tsv(probabilities_sorted, sample_names_sorted, sample_ids_str, path, filename)
+    save_probs_ids_tsv(probabilities_sorted, sample_names_sorted, sample_ids_str, sample_mapping_nums, path, filename)
     # Initialize PdfPages to save plots into a multi-page PDF
     with PdfPages(f'{path}/{pdf_filename}') as pdf:
         # Number of full plots needed (each with up to three columns)
@@ -322,6 +422,30 @@ def plot_prof_substitutions(ax, all_combined_data, substitution_type='C>T', colo
     ax.set_xticklabels(x_labels)
     ax.grid(axis='y', linestyle='--')
 
+def validate_concatenated_row(concatenated_row):
+    """
+    Validate if the concatenated row.
+    """
+    # Check for 5p part (first half)
+    if (concatenated_row[0] > concatenated_row[1] and
+        concatenated_row[0] > concatenated_row[2] and
+        concatenated_row[0] > concatenated_row[3] and
+        concatenated_row[0] > concatenated_row[4] and
+        concatenated_row[1] > concatenated_row[2] and
+        concatenated_row[1] > concatenated_row[3] and
+        concatenated_row[1] > concatenated_row[4] and
+        # Check for 3p part (last half)
+        concatenated_row[-1] > concatenated_row[-2] and
+        concatenated_row[-1] > concatenated_row[-3] and
+        concatenated_row[-1] > concatenated_row[-4] and
+        concatenated_row[-1] > concatenated_row[-5] and
+        concatenated_row[-2] > concatenated_row[-3] and
+        concatenated_row[-2] > concatenated_row[-4] and
+        concatenated_row[-2] > concatenated_row[-5]):
+        return True
+    return False
+
+
 def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns, column_5p=6, column_3p=7, balance=[0,0,0]):
     """
     Process all matrices in the directory and build a combined matrix for analysis.
@@ -341,6 +465,7 @@ def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns,
     basenames = basenames - set(high_base_rm) - set(mid_base_rm) - set(no_base_rm)
     combined_matrix = []
     sample_names = []
+    sample_names_outsourced = []
     for basename in basenames:
         files = [f for f in matrix_files if basename in f]
         try:
@@ -353,11 +478,19 @@ def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns,
         column_5p_data = matrix_5p.iloc[:, column_5p-1].values
         column_3p_data = matrix_3p.iloc[:, column_3p-1].values
         concatenated_row = np.concatenate([column_5p_data, column_3p_data[::-1]])
-        combined_matrix.append(concatenated_row)
-        sample_names.append(basename)
+        nMapped = int(basename.split('_n')[-1])
+        if (nMapped < 1000 ):  
+            if (validate_concatenated_row(concatenated_row)):
+                combined_matrix.append(concatenated_row)
+                sample_names.append(basename)
+            else:
+                sample_names_outsourced.append(basename)
+        else:
+            combined_matrix.append(concatenated_row)
+            sample_names.append(basename)
     combined_matrix = np.array(combined_matrix)
     print(f"Combined matrix shape: {combined_matrix.shape}")
-    return combined_matrix, sample_names
+    return combined_matrix, sample_names, sample_names_outsourced
 
 def main():
     parser = argparse.ArgumentParser(description='Process and plot damage profiles.')
@@ -374,7 +507,7 @@ def main():
     os.makedirs(plot_path, exist_ok=True)
 
     # Process all matrices and get results
-    combined_matrix, sample_names = process_directory_combined(
+    combined_matrix, sample_names, sample_names_outsourced = process_directory_combined(
         input_dir,
         num_rows_5p=5,
         num_rows_3p=5,
@@ -383,21 +516,47 @@ def main():
         column_3p=7
     )
 
+    # # Add a small constant to avoid log(0)
+    # small_constant = 1e-10
+    # matrix_safe = np.where(combined_matrix == 0, small_constant, combined_matrix)
+    # # Apply the natural logarithm
+    # log_matrix = np.log(matrix_safe)
+    # #matrix_safe = combined_matrix + small_constant
+    # #weights = np.array([2, 2, 1, 1, 0.5, 0.5, 1, 1, 2, 2])
+    # combined_matrix = log_matrix
+    # # weighted_matrix = combined_matrix * weights
+    # # combined_matrix = weighted_matrix
     # Add a small constant to avoid log(0)
-    small_constant = 1e-10
-    matrix_safe = combined_matrix + small_constant
+    # small_constant = 1e-10
+    # matrix_safe = combined_matrix + small_constant
+
+    # Mask out zeros by replacing them with np.inf (so they are ignored in the min calculation)
+    masked_matrix = np.where(combined_matrix == 0, np.inf, combined_matrix)
+
+    # Find the minimum value of the non-zero elements
+    min_non_zero_value = np.min(masked_matrix)
+
+    small_constant = min_non_zero_value
+    matrix_safe = np.where(combined_matrix == 0, small_constant, combined_matrix)
 
     # Apply the natural logarithm
     log_matrix = np.log(matrix_safe)
     combined_matrix = log_matrix
 
+    # Save file with outsourced sample ids
+    outsource_file = os.path.join(plot_path, 'outsourced_samples.tsv')
+    df = pd.DataFrame(sample_names_outsourced, columns=['SampleName'])
+    df.to_csv(outsource_file, sep='\t', index=False)
+
     # Iterate over k_iter for GMM clustering
     for k_iter in range(2, 5):
-        print(f'Running clustering for k_iter = {k_iter}...')
+        print(f'Running clustering for k = {k_iter}...')
         
         # Perform GMM clustering
         gmm_model, gmm_cluster_assignments, gmm_probabilities = perform_gmm(
             combined_matrix, n_components=k_iter)
+        #perform_gmm(combined_matrix, n_components=2, max_iter=1000, n_init=1000, init_params='random', tol=1e-3, random_state=1, covariance_type='diag', reg_covar=1e-3):
+
         
         gmm_plot_path = create_plot_directories(plot_path, "GMM", k_iter)
         
