@@ -450,7 +450,7 @@ int main (int argc, char *argv[]) {
 
 
 
-
+	uint64_u totalMapped = 0;
 
 	// Iterate over each reference 
 	for (int i = 0; i < h->n_targets; i++) {
@@ -516,6 +516,26 @@ int main (int argc, char *argv[]) {
 		reconstructedReference.first->l =    reconstructedReference.first->m =0;
 
 
+        // long unsigned int mapped = 0;
+		// for (int map = 0; map < sam_hdr_nref(h); ++map) {
+        //     uint64_t u, v;
+        //     hts_idx_get_stat(idx, map, &u, &v);
+		// 	mapped += u;
+        // }
+		// std::cerr << "bamfiletopen\t" << bamfiletopen << std::endl;
+		// std::cerr << "refNameStr\t" << refNameStr << std::endl;
+		// std::cerr << "mapped\t" << mapped << std::endl;
+		// std::cerr << "unmapped\t" << unmapped << std::endl;
+		// Get the number of mapped reads for the current reference 'i'
+		uint64_t mapped = 0, unmapped = 0;
+		hts_idx_get_stat(idx, i, &mapped, &unmapped);
+		totalMapped += mapped;
+		// std::cerr << "bamfiletopen\t" << bamfiletopen << std::endl;
+		// std::cerr << "refNameStr\t" << refNameStr << std::endl;
+		// std::cerr << "mapped\t" << mapped << std::endl;
+		// std::cerr << "unmapped\t" << unmapped << std::endl;
+
+
 		// Iterate over the BAM records
 		while (sam_itr_next(fp, iter, b) >= 0) {
 			
@@ -547,6 +567,19 @@ int main (int argc, char *argv[]) {
 
 			// update matrix
 			countSubsPerRef(genomeFileB, genome, b, reconstructedReference, minQualBase, refFromFasta, refFromFasta_, h, bed, mask, ispaired, isfirstpair, typesOfDimer5p, typesOfDimer3p, typesOfDimer5p_cpg, typesOfDimer3p_cpg, typesOfDimer5p_noncpg, typesOfDimer3p_noncpg, typesOfDimer5pDouble, typesOfDimer3pDouble, typesOfDimer5pSingle, typesOfDimer3pSingle);
+
+
+			// bool getDamProf = true;
+			// if ( mapped <= 10000 ){
+			// 	numAlns = 100;
+			// 	precisionThresh = 0.01;
+			// 	getDamProf = false;
+			// }
+
+
+
+
+
 
 			// Early stop mechanism: Check every numAlns alignments
 			if (processedAlns % numAlns == 0) {
@@ -678,7 +711,7 @@ int main (int argc, char *argv[]) {
 								typesOfDimer5pSingle, typesOfDimer5pDouble, typesOfDimer5p, 
 								typesOfDimer5p_cpg, typesOfDimer5p_noncpg, 
 								typesOfDimer3pSingle, typesOfDimer3pDouble, typesOfDimer3p, 
-								typesOfDimer3p_cpg, typesOfDimer3p_noncpg);
+								typesOfDimer3p_cpg, typesOfDimer3p_noncpg, mapped);
 		}
 
         // Clean up
@@ -694,7 +727,7 @@ int main (int argc, char *argv[]) {
 							typesOfDimer5pSingle, typesOfDimer5pDouble, typesOfDimer5p, 
 							typesOfDimer5p_cpg, typesOfDimer5p_noncpg, 
 							typesOfDimer3pSingle, typesOfDimer3pDouble, typesOfDimer3p, 
-							typesOfDimer3p_cpg, typesOfDimer3p_noncpg);
+							typesOfDimer3p_cpg, typesOfDimer3p_noncpg, totalMapped);
 	}
 
     // Clean up
