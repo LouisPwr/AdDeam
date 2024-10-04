@@ -15,6 +15,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
+from scipy.spatial.distance import euclidean
+
 
 from PyPDF2 import PdfReader, PdfWriter
 
@@ -44,20 +46,86 @@ def create_plot_directories(base_path, method, k_iter):
     os.makedirs(method_plot_path, exist_ok=True)
     return method_plot_path
 
-def save_probs_ids_tsv(probabilities, sample_names, sample_ids, sample_mapping_nums, plot_path, filename="cluster_probabilities_with_ids.tsv"):
+def extract_number_after_n(name):
     """
-    Save the probabilities matrix to a TSV file, where each row corresponds to a sample name and ID,
-    and each column represents a cluster, with values as the cluster probabilities.
+    Extracts the number after 'n' in a given sample name.
+    Example: 'PYK005.A0101_sorted_md_NC_016610.1_n69551' -> 69551
     """
+    return int(name.split('_n')[-1])  # Extract the number after '_n'
+
+
+#ORIGINAL
+# def save_probs_ids_tsv(probabilities, sample_names, sample_ids, sample_mapping_nums, plot_path, filename="cluster_probabilities_with_ids.tsv"):
+#     """
+#     Save the probabilities matrix to a TSV file, where each row corresponds to a sample name and ID,
+#     and each column represents a cluster, with values as the cluster probabilities.
+#     """
+#     n_clusters = probabilities.shape[1]
+#     cluster_columns = [f'Cluster{i+1}' for i in range(n_clusters)]
+#     df = pd.DataFrame(probabilities, columns=cluster_columns)
+#     df.insert(0, 'SampleID', sample_ids)
+#     df.insert(1, 'SampleName', sample_names)
+#     df.insert(2, "AlignedFrags", sample_mapping_nums)
+#     tsv_path = f'{plot_path}/{filename}'
+#     df.to_csv(tsv_path, sep='\t', index=False)
+#     print(f"Cluster probabilities with IDs saved to {tsv_path}")
+
+# def save_probs_ids_tsv(probabilities, sample_names, sample_ids, sample_mapping_nums, distances, plot_path, filename="cluster_probabilities_with_ids_and_distances.tsv"):
+#     """
+#     Save the probabilities matrix to a TSV file, where each row corresponds to a sample name and ID,
+#     each column represents a cluster, and an additional column contains the distance of each sample from its cluster center.
+#     """
+#     n_clusters = probabilities.shape[1]
+#     cluster_columns = [f'Cluster{i+1}' for i in range(n_clusters)]
+#     df = pd.DataFrame(probabilities, columns=cluster_columns)
+#     df.insert(0, 'SampleID', sample_ids)
+#     df.insert(1, 'SampleName', sample_names)
+#     df.insert(2, "AlignedFrags", sample_mapping_nums)
+#     df['Distance_to_Center'] = df['SampleName'].map(distances)
+#     tsv_path = f'{plot_path}/{filename}'
+#     df.to_csv(tsv_path, sep='\t', index=False)
+#     print(f"Cluster probabilities with IDs and distances saved to {tsv_path}")
+
+
+def save_probs_ids_tsv(probabilities, sample_names, distances, path, n_components, filename_prefix="cluster_report_k"):
+    """
+    Sort the probabilities and sample names, assign IDs, calculate distances, and save them to a TSV file.
+    
+    Parameters:
+    - probabilities: 2D numpy array where each row contains the probabilities of each sample belonging to each cluster.
+    - sample_names: List of sample names corresponding to the rows in the probabilities matrix.
+    - distances: Dictionary mapping sample names to their distance from the cluster center.
+    - path: Directory path to save the TSV file.
+    - n_components: The number of clusters (components) in GMM.
+    - filename_prefix: Prefix for the TSV filename (default: 'cluster_probabilities_ids_k').
+    """
+    # Sort samples by cluster assignment and max probability in descending order
+    assigned_clusters = np.argmax(probabilities, axis=1)  # Determine assigned clusters
+    sorted_indices = np.lexsort((-np.max(probabilities, axis=1), assigned_clusters))  # Sort by cluster and max probability
+    # Reorder probabilities, sample names, and calculate aligned fragments
+    probabilities_sorted = probabilities[sorted_indices]
+    sample_names_sorted = np.array(sample_names)[sorted_indices]
+    # Extract numbers after 'n' in sample names for aligned fragments
+    sample_mapping_nums = np.array([extract_number_after_n(name) for name in sample_names_sorted])
+    # Create sample IDs
+    sample_ids = np.arange(1, len(sample_names_sorted) + 1)
+    sample_ids_str = [f'{id:0{len(str(len(sample_names)))}d}' for id in sample_ids]  # Pad IDs with leading zeros
+    # Create filename based on the number of components (clusters)
+    filename = f"{filename_prefix}{n_components}.tsv"
+    # Create column names for the clusters
     n_clusters = probabilities.shape[1]
     cluster_columns = [f'Cluster{i+1}' for i in range(n_clusters)]
-    df = pd.DataFrame(probabilities, columns=cluster_columns)
-    df.insert(0, 'SampleID', sample_ids)
-    df.insert(1, 'SampleName', sample_names)
+    # Create a pandas DataFrame to store the cluster probabilities
+    df = pd.DataFrame(probabilities_sorted, columns=cluster_columns)
+    # Insert additional columns
+    df.insert(0, 'SampleID', sample_ids_str)
+    df.insert(1, 'SampleName', sample_names_sorted)
     df.insert(2, "AlignedFrags", sample_mapping_nums)
-    tsv_path = f'{plot_path}/{filename}'
+    # Add the Distance column
+    df['ClusterCenterDist'] = df['SampleName'].map(distances)
+    # Save the DataFrame to a TSV file
+    tsv_path = f'{path}/{filename}'
     df.to_csv(tsv_path, sep='\t', index=False)
-    print(f"Cluster probabilities with IDs saved to {tsv_path}")
 
 def scale_pdf(input_pdf_path, output_pdf_path, target_width):
     """
@@ -106,16 +174,71 @@ def create_truncated_colormap(base_color, n=100):
     new_cmap = LinearSegmentedColormap.from_list('custom_cmap', colors, N=n)
     return new_cmap
 
-def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', explained_variance=None, pdf_filename="pca_gradient_plots.pdf"):
+# def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', explained_variance=None, pdf_filename="pca_gradient_plots.pdf"):
+#     """
+#     Plot PCA results with color gradient based on the highest cluster probability per sample,
+#     and save the plot to a PDF.
+#     """
+#     n_clusters = probabilities.shape[1]
+#     colors = plt.get_cmap('tab10').colors[:n_clusters]
+#     cluster_assignments = np.argmax(probabilities, axis=1)
+#     pc1 = transformed_data[:, 0]
+#     pc2 = transformed_data[:, 1]
+#     pdf_path = f'{path}/{pdf_filename}'
+#     with PdfPages(pdf_path) as pdf:
+#         fig, ax = plt.subplots(figsize=(8, 6))
+#         for i, name in enumerate(sample_names):
+#             cluster = cluster_assignments[i]
+#             color = colors[cluster]
+#             ax.scatter(pc1[i], pc2[i], color=color, edgecolor='k', s=30)
+#         ax.set_xlabel(f'PC1 ({explained_variance[0]*100:.2f}%)' if explained_variance is not None else 'PC1')
+#         ax.set_ylabel(f'PC2 ({explained_variance[1]*100:.2f}%)' if explained_variance is not None else 'PC2')
+#         ax.set_title('PCA Result Colour Coded\nBased on GMM Cluster Assignment')
+#         norm = Normalize(vmin=0, vmax=1)
+#         for cluster in range(n_clusters):
+#             cmap = create_truncated_colormap(colors[cluster])
+#             cbar_ax = fig.add_axes([0.85, 0.7 - cluster * 0.2, 0.03, 0.15])
+#             fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), cax=cbar_ax, orientation='vertical', ticks=np.arange(0, 1.2, 0.2))
+#             cbar_ax.set_title(f'Cluster {cluster + 1}', fontsize=10)
+#         plt.subplots_adjust(right=0.8)
+#         ax.grid(True)
+#         pdf.savefig(fig)
+#         plt.close(fig)
+#     print(f"PCA gradient plot saved to {pdf_path}")
+
+def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', explained_variance=None, pdf_filename="pca_gradient_with_distances.pdf"):
     """
-    Plot PCA results with color gradient based on the highest cluster probability per sample,
-    and save the plot to a PDF.
+    Plot PCA results with color gradient based on cluster assignment, compute cluster centers, 
+    and report normalized distances from each sample to its cluster center.
     """
     n_clusters = probabilities.shape[1]
     colors = plt.get_cmap('tab10').colors[:n_clusters]
     cluster_assignments = np.argmax(probabilities, axis=1)
     pc1 = transformed_data[:, 0]
     pc2 = transformed_data[:, 1]
+    # Compute cluster centers (centroids)
+    cluster_centers = []
+    for cluster in range(n_clusters):
+        cluster_points = transformed_data[cluster_assignments == cluster]
+        cluster_center = cluster_points.mean(axis=0)  # Calculate centroid
+        cluster_centers.append(cluster_center)
+    # Compute distances from each sample to its cluster center
+    distances = []
+    max_distances = [0] * n_clusters  # Keep track of max distance per cluster
+    # Calculate distances and determine the max distance per cluster
+    for i, cluster in enumerate(cluster_assignments):
+        center = cluster_centers[cluster]
+        distance = euclidean(transformed_data[i], center)
+        distances.append(distance)
+        if distance > max_distances[cluster]:
+            max_distances[cluster] = distance
+    # Normalize distances by dividing each distance by the max distance in its cluster
+    normalized_distances = []
+    for i, cluster in enumerate(cluster_assignments):
+        normalized_distance = distances[i] / max_distances[cluster] if max_distances[cluster] != 0 else 0
+        normalized_distances.append(normalized_distance)
+    normalized_distances = np.round(normalized_distances, 4)
+
     pdf_path = f'{path}/{pdf_filename}'
     with PdfPages(pdf_path) as pdf:
         fig, ax = plt.subplots(figsize=(8, 6))
@@ -126,17 +249,23 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
         ax.set_xlabel(f'PC1 ({explained_variance[0]*100:.2f}%)' if explained_variance is not None else 'PC1')
         ax.set_ylabel(f'PC2 ({explained_variance[1]*100:.2f}%)' if explained_variance is not None else 'PC2')
         ax.set_title('PCA Result Colour Coded\nBased on GMM Cluster Assignment')
+        for cluster, center in enumerate(cluster_centers):
+            ax.scatter(center[0], center[1], color=colors[cluster], marker='x', s=100, label=f'center k{cluster + 1}')
+        ax.legend(fontsize=6)
         norm = Normalize(vmin=0, vmax=1)
+        # Add colorbars for each cluster using your create_truncated_colormap
         for cluster in range(n_clusters):
-            cmap = create_truncated_colormap(colors[cluster])
-            cbar_ax = fig.add_axes([0.85, 0.7 - cluster * 0.2, 0.03, 0.15])
+            cmap = create_truncated_colormap(colors[cluster])  # Use your function here
+            cbar_ax = fig.add_axes([0.85, 0.7 - cluster * 0.2, 0.03, 0.15])  # Adjust position for each cluster
             fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), cax=cbar_ax, orientation='vertical', ticks=np.arange(0, 1.2, 0.2))
             cbar_ax.set_title(f'Cluster {cluster + 1}', fontsize=10)
         plt.subplots_adjust(right=0.8)
         ax.grid(True)
         pdf.savefig(fig)
         plt.close(fig)
-    print(f"PCA gradient plot saved to {pdf_path}")
+    distance_report = {name: norm_dist for name, norm_dist in zip(sample_names, normalized_distances)}
+    return distance_report  # Optionally return the normalized distances for further analysis
+
 
 def perform_gmm(combined_matrix, n_components=2, max_iter=10000, n_init=1000, tol=1e-4, random_state=1, covariance_type='spherical', reg_covar=1e-3):
     """
@@ -280,13 +409,13 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
     sorted_indices = np.lexsort((-np.max(probabilities, axis=1), assigned_clusters))
     probabilities_sorted = probabilities[sorted_indices]
     sample_names_sorted = np.array(sample_names)[sorted_indices]
-    sample_mapping_nums = np.array([extract_number_after_n(name) for name in sample_names_sorted])
+    #sample_mapping_nums = np.array([extract_number_after_n(name) for name in sample_names_sorted])
     #assigned_clusters_sorted = assigned_clusters[sorted_indices]
     sample_ids = np.arange(1, len(sample_names_sorted) + 1)
     sample_ids_str = [f'{id:0{len(str(len(sample_names)))}d}' for id in sample_ids]
     # Save probabilities, sample names, and IDs to a TSV file
-    filename=f"cluster_probabilities_ids_k{n_components}.tsv"
-    save_probs_ids_tsv(probabilities_sorted, sample_names_sorted, sample_ids_str, sample_mapping_nums, path, filename)
+    # filename=f"cluster_probabilities_ids_k{n_components}.tsv"
+    # save_probs_ids_tsv(probabilities_sorted, sample_names_sorted, sample_ids_str, sample_mapping_nums, path, filename)
     # Initialize PdfPages to save plots into a multi-page PDF
     with PdfPages(f'{path}/{pdf_filename}') as pdf:
         # Number of full plots needed (each with up to three columns)
@@ -305,9 +434,17 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
                     cluster_probabilities[component].append(probabilities_on_plot[i, component])
             figW = 8.5
             figH = 12
+            if samples_on_plot/max_samples_per_plot< 0.25:
+                figH = 4
+            elif samples_on_plot/max_samples_per_plot < 0.5:
+                figH = 6
+            elif samples_on_plot/max_samples_per_plot < 0.75:
+                figH = 9    
+            if plot_idx == num_plots-1:
+                max_samples_per_column = max_samples_per_column//columns_per_plot + max_samples_per_column%columns_per_plot     
             figsizeFactor = 1
-            if samples_on_plot // max_samples_per_plot == 0:
-                figsizeFactor = min(samples_on_plot/max_samples_per_column * figsizeFactor + 0.2, 1)
+            # if samples_on_plot // max_samples_per_plot == 0:
+            #     figsizeFactor = min(samples_on_plot/max_samples_per_column * figsizeFactor + 0.2, 1)
             # Create a new figure for each set of three columns (DINA4 format: 8.27 x 11.69 inches)
             fig, axs = plt.subplots(1, columns_on_plot, figsize=(figW, figsizeFactor*figH))  # DINA4 width split across 3 columns
             if columns_on_plot == 1:
@@ -341,9 +478,9 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             plt.tight_layout(rect=[0, 0, 1, 0.97])  # Reduced rect to leave less space at the top
             pdf.savefig(fig)
             plt.close()
-    with open(f'{path}/sample_legend_k{n_components}.txt', 'w') as f:
-        for i, sample_name in enumerate(sample_names_sorted):
-            f.write(f'{sample_ids[i]:0{len(str(len(sample_names_sorted)))}d}: {sample_name}\n')
+    # with open(f'{path}/sample_legend_k{n_components}.txt', 'w') as f:
+    #     for i, sample_name in enumerate(sample_names_sorted):
+    #         f.write(f'{sample_ids[i]:0{len(str(len(sample_names_sorted)))}d}: {sample_name}\n')
 
 def find_matching_files(damage_dir, sample_names):
     file_dict = {}
@@ -498,10 +635,12 @@ def main():
                         help='Path to the directory containing the profiles generated with bam2prof.')
     parser.add_argument('-o', type=str, required=True,
                         help='Path where your plots will be saved.')
-    args = parser.parse_args()
+    parser.add_argument('-k', type=int, default=4, help='Run clustering from 2 to k. (default: %(default)s)')
 
+    args = parser.parse_args()
     input_dir = args.i
     plot_path = args.o
+    cluster_k = args.k
 
     # Create the output directory if it doesn't exist
     os.makedirs(plot_path, exist_ok=True)
@@ -549,17 +688,13 @@ def main():
     df.to_csv(outsource_file, sep='\t', index=False)
 
     # Iterate over k_iter for GMM clustering
-    for k_iter in range(2, 5):
+    for k_iter in range(2, cluster_k+1):
         print(f'Running clustering for k = {k_iter}...')
         
         # Perform GMM clustering
         gmm_model, gmm_cluster_assignments, gmm_probabilities = perform_gmm(
             combined_matrix, n_components=k_iter)
-        #perform_gmm(combined_matrix, n_components=2, max_iter=1000, n_init=1000, init_params='random', tol=1e-3, random_state=1, covariance_type='diag', reg_covar=1e-3):
-
-        
         gmm_plot_path = create_plot_directories(plot_path, "GMM", k_iter)
-        
         plot_cluster_probabilities_sorted_multicol(
             gmm_probabilities, sample_names, gmm_plot_path, k_iter,
             pdf_filename=f"cluster_report_k{k_iter}.pdf")
@@ -573,10 +708,12 @@ def main():
         # Make PCA Plot with gradient
         transformed_data, explained_variance, pca = perform_pca(combined_matrix, None)
         pca_plot_path = create_plot_directories(plot_path, "PCA", k_iter)
-        plot_pca_gradient(
+        distances = plot_pca_gradient(
             transformed_data, sample_names, gmm_probabilities, pca_plot_path,
             explained_variance=explained_variance, pdf_filename=f"pca_k{k_iter}.pdf")
         pdf3 = os.path.join(pca_plot_path, f"pca_k{k_iter}.pdf")
+
+        save_probs_ids_tsv(gmm_probabilities, sample_names, distances, gmm_plot_path, k_iter, filename_prefix="cluster_report_k")
     
         pdf_list = [pdf1, pdf2, pdf3]
         
