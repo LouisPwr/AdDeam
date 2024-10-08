@@ -5,6 +5,8 @@ import os
 import random
 import glob
 import argparse
+from concurrent.futures import ProcessPoolExecutor
+
 
 import numpy as np
 import pandas as pd
@@ -17,6 +19,7 @@ from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 from scipy.spatial.distance import euclidean
 
+import datetime
 
 from PyPDF2 import PdfReader, PdfWriter
 
@@ -267,7 +270,7 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
     return distance_report  # Optionally return the normalized distances for further analysis
 
 
-def perform_gmm(combined_matrix, n_components=2, max_iter=10000, n_init=1000, tol=1e-4, random_state=1, covariance_type='spherical', reg_covar=1e-3):
+def perform_gmm(combined_matrix, n_components=2, max_iter=10000, n_init=2000, tol=1e-3, random_state=1, covariance_type='spherical', reg_covar=1e-3):
     """
     Perform Gaussian Mixture Modeling (GMM) on the combined matrix and return the probabilities of cluster assignment.
     """
@@ -420,13 +423,21 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
     with PdfPages(f'{path}/{pdf_filename}') as pdf:
         # Number of full plots needed (each with up to three columns)
         num_plots = (len(sample_names_sorted) + max_samples_per_plot - 1) // max_samples_per_plot
+        # print("len(sample_names_sorted)", len(sample_names_sorted))
+        # print("max_samples_per_plot", max_samples_per_plot)
+        # print("num_plots", num_plots)
+
         for plot_idx in range(num_plots):
             start_idx = plot_idx * max_samples_per_plot
             end_idx = min(start_idx + max_samples_per_plot, len(sample_names_sorted))
             samples_on_plot = end_idx - start_idx
+            # print("samples_on_plot",samples_on_plot)
+            # print("start_idx",start_idx)
+            # print("end_idx",end_idx)
             #columns_on_plot = min(len(sample_names_sorted)//max_samples_per_column + 1, columns_per_plot)
             columns_on_plot = min(samples_on_plot//max_samples_per_column + 1, columns_per_plot)
             sample_ids_on_plot = sample_ids_str[start_idx:end_idx]  # Top to bottom order now
+            #print("len(sample_ids_on_plot)", len(sample_ids_on_plot))
             probabilities_on_plot = probabilities_sorted[start_idx:end_idx]  # Top to bottom order now
             cluster_probabilities = {i: [] for i in range(n_components)}
             for i in range(len(sample_ids_on_plot)):
@@ -441,7 +452,9 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             elif samples_on_plot/max_samples_per_plot < 0.75:
                 figH = 9    
             if plot_idx == num_plots-1:
-                max_samples_per_column = max_samples_per_column//columns_per_plot + max_samples_per_column%columns_per_plot     
+                max_samples_per_column = samples_on_plot//columns_on_plot + samples_on_plot%columns_on_plot     
+                # print("max_samples_per_column", max_samples_per_column)
+                # print("columns_on_plot", columns_on_plot)
             figsizeFactor = 1
             # if samples_on_plot // max_samples_per_plot == 0:
             #     figsizeFactor = min(samples_on_plot/max_samples_per_column * figsizeFactor + 0.2, 1)
@@ -453,6 +466,10 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             for col in range(columns_on_plot):
                 col_start = col * max_samples_per_column
                 col_end = min(col_start + max_samples_per_column, len(sample_ids_on_plot))
+                # print("col_start", col_start)
+                # print("col_end", col_end)
+                # print("max_samples_per_column", max_samples_per_column)
+                # print("len(sample_ids_on_plot)", len(sample_ids_on_plot))
                 bottom = np.zeros(col_end - col_start)
                 # Reverse the sample IDs and the corresponding probabilities for plotting top to bottom
                 sample_ids_for_plot = sample_ids_on_plot[col_start:col_end][::-1]
@@ -477,20 +494,46 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             fig.legend(handles, labels, loc='upper center', ncol=n_components, bbox_to_anchor=(0.5, 0.99))
             plt.tight_layout(rect=[0, 0, 1, 0.97])  # Reduced rect to leave less space at the top
             pdf.savefig(fig)
+            png_filename = f'{path}/cluster_probabilities_plot_{plot_idx + 1}.png'
+            #fig.savefig(png_filename, dpi=300)
             plt.close()
     # with open(f'{path}/sample_legend_k{n_components}.txt', 'w') as f:
     #     for i, sample_name in enumerate(sample_names_sorted):
     #         f.write(f'{sample_ids[i]:0{len(str(len(sample_names_sorted)))}d}: {sample_name}\n')
 
+# def find_matching_files(damage_dir, sample_names):
+#     file_dict = {}
+#     for sample_name in sample_names:
+#         file_pattern = f'{damage_dir}/*{sample_name}*.prof'
+#         matching_files = glob.glob(file_pattern)
+#         fivep_file = next((f for f in matching_files if '_5p.prof' in f), None)
+#         threep_file = next((f for f in matching_files if '_3p.prof' in f), None)
+#         if fivep_file and threep_file:
+#             file_dict[sample_name] = {'5p': fivep_file, '3p': threep_file}
+#     return file_dict
+
 def find_matching_files(damage_dir, sample_names):
-    file_dict = {}
-    for sample_name in sample_names:
-        file_pattern = f'{damage_dir}/*{sample_name}*.prof'
-        matching_files = glob.glob(file_pattern)
-        fivep_file = next((f for f in matching_files if '_5p.prof' in f), None)
-        threep_file = next((f for f in matching_files if '_3p.prof' in f), None)
-        if fivep_file and threep_file:
-            file_dict[sample_name] = {'5p': fivep_file, '3p': threep_file}
+    # Load all .prof files from the directory once
+    all_prof_files = glob.glob(f'{damage_dir}/*.prof')
+    
+    # Create a dictionary to store matched files for each sample
+    file_dict = {sample_name: {'5p': None, '3p': None} for sample_name in sample_names}
+    
+    # Iterate through all files and match them with sample names
+    for file_path in all_prof_files:
+        # Get the basename of the file to check for sample matches
+        base_name = os.path.basename(file_path)
+        
+        for sample_name in sample_names:
+            if sample_name in base_name:
+                if '_5p.prof' in base_name:
+                    file_dict[sample_name]['5p'] = file_path
+                elif '_3p.prof' in base_name:
+                    file_dict[sample_name]['3p'] = file_path
+    
+    # Remove entries that don't have both files matched
+    file_dict = {k: v for k, v in file_dict.items() if v['5p'] and v['3p']}
+    
     return file_dict
 
 def plot_weighted_profiles(probabilities, sample_names, damage_paths, plot_path, reverse, method, n_components, pdf_filename="weighted_profiles.pdf"):
@@ -498,6 +541,8 @@ def plot_weighted_profiles(probabilities, sample_names, damage_paths, plot_path,
     Calculate and plot weighted representative damage profiles based on the cluster probabilities,
     and save the plots to a multi-page PDF.
     """
+    #print("probabilities", probabilities)
+    #print("sample_names", sample_names)
     pdf_path = f'{plot_path}/{pdf_filename}'
     with PdfPages(pdf_path) as pdf:
         for cluster in range(n_components):
@@ -537,6 +582,8 @@ def plot_weighted_profiles(probabilities, sample_names, damage_paths, plot_path,
             plt.suptitle(f'Representative Substitution Frequencies for Cluster {cluster + 1} ({method})')
             plt.tight_layout()
             pdf.savefig(fig)
+            png_filename = f'{plot_path}/cluster__weighted_profiles_{cluster + 1}.png'
+            #fig.savefig(png_filename, dpi=300)
             plt.close(fig)
     print(f"Weighted profiles saved to {pdf_path}")
 
@@ -692,18 +739,26 @@ def main():
         print(f'Running clustering for k = {k_iter}...')
         
         # Perform GMM clustering
+        now = datetime.datetime.now()
+        print("Before cluster", now)
         gmm_model, gmm_cluster_assignments, gmm_probabilities = perform_gmm(
             combined_matrix, n_components=k_iter)
+        now = datetime.datetime.now()
+        print("Before plot cluster", now)
         gmm_plot_path = create_plot_directories(plot_path, "GMM", k_iter)
         plot_cluster_probabilities_sorted_multicol(
             gmm_probabilities, sample_names, gmm_plot_path, k_iter,
             pdf_filename=f"cluster_report_k{k_iter}.pdf")
         pdf1 = os.path.join(gmm_plot_path, f"cluster_report_k{k_iter}.pdf")
         
+        now = datetime.datetime.now()
+        print("Before plot weighted", now)
         plot_weighted_profiles(
             gmm_probabilities, sample_names, input_dir, gmm_plot_path, True,
             "GMM", k_iter, pdf_filename=f"weighted_profiles_k{k_iter}.pdf")
         pdf2 = os.path.join(gmm_plot_path, f"weighted_profiles_k{k_iter}.pdf")
+        now = datetime.datetime.now()
+        print("Before PCA", now)
     
         # Make PCA Plot with gradient
         transformed_data, explained_variance, pca = perform_pca(combined_matrix, None)
@@ -713,6 +768,8 @@ def main():
             explained_variance=explained_variance, pdf_filename=f"pca_k{k_iter}.pdf")
         pdf3 = os.path.join(pca_plot_path, f"pca_k{k_iter}.pdf")
 
+        now = datetime.datetime.now()
+        print("Before id tsv", now)
         save_probs_ids_tsv(gmm_probabilities, sample_names, distances, gmm_plot_path, k_iter, filename_prefix="cluster_report_k")
     
         pdf_list = [pdf1, pdf2, pdf3]
