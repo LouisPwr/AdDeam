@@ -638,7 +638,7 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             plt.tight_layout(rect=[0, 0, 1, 0.97])  # Reduced rect to leave less space at the top
             pdf.savefig(fig)
             png_filename = f'{path}/cluster_probabilities_plot_{plot_idx + 1}.png'
-            fig.savefig(png_filename, dpi=300)
+            #fig.savefig(png_filename, dpi=300)
             plt.close()
     # with open(f'{path}/sample_legend_k{n_components}.txt', 'w') as f:
     #     for i, sample_name in enumerate(sample_names_sorted):
@@ -786,7 +786,7 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
             plt.tight_layout()
             pdf.savefig(fig)
             png_filename = f'{plot_path}/cluster__weighted_profiles_{cluster + 1}.png'
-            fig.savefig(png_filename, dpi=300)
+            #fig.savefig(png_filename, dpi=300)
             plt.close(fig)
     print(f"Weighted profiles saved to {pdf_path}")
 
@@ -1017,18 +1017,19 @@ def main():
     # Iterate over k_iter for GMM clustering
     for k_iter in range(2, cluster_k+1):
         print(f'Running clustering for k = {k_iter}...')
-        
-        # Perform GMM clustering
-        now = datetime.datetime.now()
-        print("Before cluster", now)
-        gmm_model, gmm_cluster_assignments, gmm_probabilities = perform_gmm(
-            combined_matrix, n_components=k_iter)
 
         now = datetime.datetime.now()
         print("Before PCA", now)
         # Make PCA Plot with gradient
         transformed_data, explained_variance, pca = perform_pca(combined_matrix, None)
         pca_plot_path = create_plot_directories(plot_path, "PCA", k_iter)
+
+        # Perform GMM clustering
+        now = datetime.datetime.now()
+        print("Before cluster", now)
+        gmm_model, gmm_cluster_assignments, gmm_probabilities = perform_gmm(
+            transformed_data[:, :2], n_components=k_iter)
+
         distances = plot_pca_gradient(
             transformed_data, sample_names, gmm_probabilities, pca_plot_path,
             explained_variance=explained_variance, pdf_filename=f"pca_k{k_iter}.pdf")
