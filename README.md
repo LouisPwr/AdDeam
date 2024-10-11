@@ -1,6 +1,6 @@
 # AdDeam
 
-AdDeam is a powerful tool designed to take a list of BAM files as input and generate damage profiles, which can be visualized to group similar profiles together. It is particularly useful for analyzing ancient DNA and other degraded DNA samples, where determining and clustering damage patterns is essential.
+AdDeam is a new tool designed to take a list of BAM files as input and generate damage profiles, which can be visualized to group similar profiles together. AdDeam uses a modified version of `bam2prof` (https://github.com/grenaud/bam2prof).
 
 ## Modes of Operation
 AdDeam comes with two distinct modes:
@@ -63,6 +63,7 @@ Use the `bam2prof.py` wrapper to generate damage profiles from a list of BAM fil
 Once the profiles are generated, cluster and visualize them using `cluster.py`. Specify the input directory for the profiles and an output directory for the plots:
 
        python cluster.py -i profilesDir -o plotsDir
+
 
 
 

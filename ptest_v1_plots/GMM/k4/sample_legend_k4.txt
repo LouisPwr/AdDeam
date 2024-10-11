@@ -1,7 +1,0 @@
-1: Ust_Ishim.hg19_1000g.all_sorted_classic
-2: irk034_merged.hs37d5.fa.cons.90perc_sorted_classic
-3: I1072.1240k_sorted_classic
-4: sf12_90perc_libr_160201.merge.hs37d5.fa_sorted_classic
-5: prs012WGC.hs37d5.fa.cons.90perc_sorted_classic
-6: ATP2.merged.hs37d5.fa.cons.90perc_sorted_classic
-7: cth842_all.merged.hs37d5.fa.cons.90perc_sorted_classic

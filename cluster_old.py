@@ -58,6 +58,39 @@ def extract_number_after_n(name):
     return int(name.split('_n')[-1])  # Extract the number after '_n'
 
 
+#ORIGINAL
+# def save_probs_ids_tsv(probabilities, sample_names, sample_ids, sample_mapping_nums, plot_path, filename="cluster_probabilities_with_ids.tsv"):
+#     """
+#     Save the probabilities matrix to a TSV file, where each row corresponds to a sample name and ID,
+#     and each column represents a cluster, with values as the cluster probabilities.
+#     """
+#     n_clusters = probabilities.shape[1]
+#     cluster_columns = [f'Cluster{i+1}' for i in range(n_clusters)]
+#     df = pd.DataFrame(probabilities, columns=cluster_columns)
+#     df.insert(0, 'SampleID', sample_ids)
+#     df.insert(1, 'SampleName', sample_names)
+#     df.insert(2, "AlignedFrags", sample_mapping_nums)
+#     tsv_path = f'{plot_path}/{filename}'
+#     df.to_csv(tsv_path, sep='\t', index=False)
+#     print(f"Cluster probabilities with IDs saved to {tsv_path}")
+
+# def save_probs_ids_tsv(probabilities, sample_names, sample_ids, sample_mapping_nums, distances, plot_path, filename="cluster_probabilities_with_ids_and_distances.tsv"):
+#     """
+#     Save the probabilities matrix to a TSV file, where each row corresponds to a sample name and ID,
+#     each column represents a cluster, and an additional column contains the distance of each sample from its cluster center.
+#     """
+#     n_clusters = probabilities.shape[1]
+#     cluster_columns = [f'Cluster{i+1}' for i in range(n_clusters)]
+#     df = pd.DataFrame(probabilities, columns=cluster_columns)
+#     df.insert(0, 'SampleID', sample_ids)
+#     df.insert(1, 'SampleName', sample_names)
+#     df.insert(2, "AlignedFrags", sample_mapping_nums)
+#     df['Distance_to_Center'] = df['SampleName'].map(distances)
+#     tsv_path = f'{plot_path}/{filename}'
+#     df.to_csv(tsv_path, sep='\t', index=False)
+#     print(f"Cluster probabilities with IDs and distances saved to {tsv_path}")
+
+
 def save_probs_ids_tsv(probabilities, sample_names, distances, path, n_components, filename_prefix="cluster_report_k"):
     """
     Sort the probabilities and sample names, assign IDs, calculate distances, and save them to a TSV file.
@@ -145,6 +178,100 @@ def create_truncated_colormap(base_color, n=100):
     new_cmap = LinearSegmentedColormap.from_list('custom_cmap', colors, N=n)
     return new_cmap
 
+# def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', explained_variance=None, pdf_filename="pca_gradient_plots.pdf"):
+#     """
+#     Plot PCA results with color gradient based on the highest cluster probability per sample,
+#     and save the plot to a PDF.
+#     """
+#     n_clusters = probabilities.shape[1]
+#     colors = plt.get_cmap('tab10').colors[:n_clusters]
+#     cluster_assignments = np.argmax(probabilities, axis=1)
+#     pc1 = transformed_data[:, 0]
+#     pc2 = transformed_data[:, 1]
+#     pdf_path = f'{path}/{pdf_filename}'
+#     with PdfPages(pdf_path) as pdf:
+#         fig, ax = plt.subplots(figsize=(8, 6))
+#         for i, name in enumerate(sample_names):
+#             cluster = cluster_assignments[i]
+#             color = colors[cluster]
+#             ax.scatter(pc1[i], pc2[i], color=color, edgecolor='k', s=30)
+#         ax.set_xlabel(f'PC1 ({explained_variance[0]*100:.2f}%)' if explained_variance is not None else 'PC1')
+#         ax.set_ylabel(f'PC2 ({explained_variance[1]*100:.2f}%)' if explained_variance is not None else 'PC2')
+#         ax.set_title('PCA Result Colour Coded\nBased on GMM Cluster Assignment')
+#         norm = Normalize(vmin=0, vmax=1)
+#         for cluster in range(n_clusters):
+#             cmap = create_truncated_colormap(colors[cluster])
+#             cbar_ax = fig.add_axes([0.85, 0.7 - cluster * 0.2, 0.03, 0.15])
+#             fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), cax=cbar_ax, orientation='vertical', ticks=np.arange(0, 1.2, 0.2))
+#             cbar_ax.set_title(f'Cluster {cluster + 1}', fontsize=10)
+#         plt.subplots_adjust(right=0.8)
+#         ax.grid(True)
+#         pdf.savefig(fig)
+#         plt.close(fig)
+#     print(f"PCA gradient plot saved to {pdf_path}")
+
+# def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', explained_variance=None, pdf_filename="pca_gradient_with_distances.pdf"):
+#     """
+#     Plot PCA results with color gradient based on cluster assignment, compute cluster centers, 
+#     and report normalized distances from each sample to its cluster center.
+#     """
+#     n_clusters = probabilities.shape[1]
+#     colors = plt.get_cmap('tab10').colors[:n_clusters]
+#     cluster_assignments = np.argmax(probabilities, axis=1)
+#     pc1 = transformed_data[:, 0]
+#     pc2 = transformed_data[:, 1]
+#     # Compute cluster centers (centroids)
+#     cluster_centers = []
+#     for cluster in range(n_clusters):
+#         cluster_points = transformed_data[cluster_assignments == cluster]
+#         cluster_center = cluster_points.mean(axis=0)  # Calculate centroid
+#         cluster_centers.append(cluster_center)
+#     # Compute distances from each sample to its cluster center
+#     distances = []
+#     max_distances = [0] * n_clusters  # Keep track of max distance per cluster
+#     # Calculate distances and determine the max distance per cluster
+#     for i, cluster in enumerate(cluster_assignments):
+#         center = cluster_centers[cluster]
+#         distance = euclidean(transformed_data[i], center)
+#         distances.append(distance)
+#         if distance > max_distances[cluster]:
+#             max_distances[cluster] = distance
+#     # Normalize distances by dividing each distance by the max distance in its cluster
+#     normalized_distances = []
+#     for i, cluster in enumerate(cluster_assignments):
+#         normalized_distance = distances[i] / max_distances[cluster] if max_distances[cluster] != 0 else 0
+#         normalized_distances.append(normalized_distance)
+#     normalized_distances = np.round(normalized_distances, 4)
+
+#     pdf_path = f'{path}/{pdf_filename}'
+#     with PdfPages(pdf_path) as pdf:
+#         fig, ax = plt.subplots(figsize=(8, 6))
+#         for i, name in enumerate(sample_names):
+#             cluster = cluster_assignments[i]
+#             color = colors[cluster]
+#             ax.scatter(pc1[i], pc2[i], color=color, edgecolor='k', s=30)
+#         ax.set_xlabel(f'PC1 ({explained_variance[0]*100:.2f}%)' if explained_variance is not None else 'PC1')
+#         ax.set_ylabel(f'PC2 ({explained_variance[1]*100:.2f}%)' if explained_variance is not None else 'PC2')
+#         ax.set_title('PCA Result Colour Coded\nBased on GMM Cluster Assignment')
+#         for cluster, center in enumerate(cluster_centers):
+#             ax.scatter(center[0], center[1], color=colors[cluster], marker='x', s=100, label=f'center k{cluster + 1}')
+#         ax.legend(fontsize=6)
+#         norm = Normalize(vmin=0, vmax=1)
+#         # Add colorbars for each cluster using your create_truncated_colormap
+#         for cluster in range(n_clusters):
+#             cmap = create_truncated_colormap(colors[cluster])  # Use your function here
+#             cbar_ax = fig.add_axes([0.85, 0.7 - cluster * 0.2, 0.03, 0.15])  # Adjust position for each cluster
+#             fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), cax=cbar_ax, orientation='vertical', ticks=np.arange(0, 1.2, 0.2))
+#             cbar_ax.set_title(f'Cluster {cluster + 1}', fontsize=10)
+#         plt.subplots_adjust(right=0.8)
+#         ax.grid(True)
+#         pdf.savefig(fig)
+#         plt.close(fig)
+#     distance_report = {name: norm_dist for name, norm_dist in zip(sample_names, normalized_distances)}
+#     return distance_report  # Optionally return the normalized distances for further analysis
+
+
+
 
 def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', explained_variance=None, pdf_filename="pca_gradient_with_distances.pdf"):
     """
@@ -156,6 +283,7 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
     cluster_assignments = np.argmax(probabilities, axis=1)
     pc1 = transformed_data[:, 0]
     pc2 = transformed_data[:, 1]
+
     # Compute cluster centers (centroids)
     cluster_centers = []
     for cluster in range(n_clusters):
@@ -178,16 +306,20 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
         normalized_distance = distances[i] / max_distances[cluster] if max_distances[cluster] != 0 else 0
         normalized_distances.append(normalized_distance)
     normalized_distances = np.round(normalized_distances, 4)
+
     # Create a truncated colormap for each cluster based on its color
     cmap_dict = {
         cluster: create_truncated_colormap(colors[cluster])
         for cluster in range(n_clusters)
     }
+
     # Calculate minimum probabilities per cluster
     min_probabilities = [probabilities[cluster_assignments == cluster, cluster].min() for cluster in range(n_clusters)]
+
     # Create the figure
     fig_width = 8 + (n_clusters // 4) * 2  # Dynamically adjust width based on the number of clusters
     fig, ax = plt.subplots(figsize=(fig_width, 6))
+    
     pdf_path = f'{path}/{pdf_filename}'
     with PdfPages(pdf_path) as pdf:
         # Plot the PCA results with transparency based on probabilities
@@ -202,19 +334,25 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
             else:
                 normalized_prob = (probability - min_prob) / (1 - min_prob)
             normalized_prob = max(0, min(normalized_prob, 1))  # Ensure it's within [0, 1]
+            
             # Use the colormap for the cluster to determine the color
             cmap = cmap_dict[cluster]
+            
             # Adjust for min_prob == 1
             if min_prob == 1:
                 color = colors[cluster]  # Use the cluster's base color directly
             else:
                 color = cmap(normalized_prob)
+            
             ax.scatter(pc1[i], pc2[i], color=color, edgecolor='k', s=20)
+
         ax.set_xlabel(f'PC1 ({explained_variance[0]*100:.2f}%)' if explained_variance is not None else 'PC1')
         ax.set_ylabel(f'PC2 ({explained_variance[1]*100:.2f}%)' if explained_variance is not None else 'PC2')
         ax.set_title('PCA Result Colour Coded\nBased on GMM Cluster Assignment')
+
         # Normalize for color mapping (from 0 to 1)
         norm = Normalize(vmin=0, vmax=1)
+        
         # Add colorbars for each cluster using create_truncated_colormap
         cbar_width = 0.02
         cbar_height = 0.15
@@ -222,12 +360,16 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
         for idx, cluster in enumerate(range(n_clusters)):
             col = idx // 4  # Calculate which column the colorbar should be in (0 for first column, 1 for second)
             row = idx % 4   # Calculate the row position within the column
+            
             cbar_x = 0.75 + col * (cbar_width + 0.07)  # Adjust x position for column with more spacing
             cbar_y = 0.7 - row * (cbar_height + cbar_spacing)  # Adjust y position for row
+            
             cmap = cmap_dict[cluster]
             cbar_ax = fig.add_axes([cbar_x, cbar_y, cbar_width, cbar_height])
+            
             # Get the minimum probability for the cluster
             min_prob = min_probabilities[cluster]
+            
             # Adjust normalization and colorbar behavior
             if min_prob == 1:
                 # Create a solid color ScalarMappable with the same color for the entire bar
@@ -250,8 +392,6 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
         plt.subplots_adjust(right=0.7)  # Adjust space for legends with more space on the right
         ax.grid(True)
         pdf.savefig(fig)
-        png_filename = f'{path}/PCA_gradient_{cluster + 1}.png'
-        fig.savefig(png_filename, dpi=300)
         plt.close(fig)
     
     distance_report = {name: norm_dist for name, norm_dist in zip(sample_names, normalized_distances)}
@@ -267,31 +407,38 @@ def perform_gmm(combined_matrix, n_components=2, max_iter=10000, n_init=2000, to
     # min_vals and max_vals in log space
     min_vals = np.min(combined_matrix, axis=0)
     max_vals = np.max(combined_matrix, axis=0)
+    
     # Convert min and max values from log space to linear space
     min_vals_lin = np.exp(min_vals)
     max_vals_lin = np.exp(max_vals)
+    
     if n_components == 2:
         # Compute the arithmetic mean in linear space
         mean_1 = min_vals
         #mean_2 = max_vals  # Arithmetic mean in linear space, converted back to log
         mean_2 = np.log((min_vals_lin + max_vals_lin) / 2)  # Arithmetic mean in linear space, converted back to log
         means_init = np.vstack([mean_1, mean_2])
+    
     elif n_components == 3:
         mean_1 = min_vals
         mean_2 = np.log((min_vals_lin + max_vals_lin) / 2)  # Arithmetic mean
         mean_3 = max_vals
         means_init = np.vstack([mean_1, mean_2, mean_3])
+    
     elif n_components > 3:
         means_init = np.zeros((n_components, combined_matrix.shape[1]))
         means_init[0] = min_vals
         means_init[-1] = max_vals
+        
         # Distribute other means evenly between min and max in linear space
         for i in range(1, n_components - 1):
             alpha = i / (n_components - 1)
             mean_lin = (1 - alpha) * min_vals_lin + alpha * max_vals_lin  # Linear interpolation in linear space
             means_init[i] = np.log(mean_lin)  # Convert back to log space
+
     else:
         raise ValueError("n_components must be greater than or equal to 2.")
+    
     gmm_model = GaussianMixture(
         n_components=n_components, max_iter=max_iter, n_init=n_init,
         means_init=means_init, tol=tol,
@@ -306,6 +453,76 @@ def perform_gmm(combined_matrix, n_components=2, max_iter=10000, n_init=2000, to
     probabilities_rounded[np.arange(probabilities_rounded.shape[0]), max_indices] += adjustments  # Add the difference to the highest probability in each row
     return gmm_model, cluster_assignments, probabilities_rounded
 
+# def perform_gmm(combined_matrix, n_components=2, max_iter=10000, n_init=1000, tol=1e-4, random_state=1, init_params='random', covariance_type='spherical', reg_covar=1e-3):
+#     """
+#     Perform Gaussian Mixture Modeling (GMM) on the combined matrix and return the probabilities of cluster assignment.
+#     """
+#     min_vals = np.min(combined_matrix, axis=0)
+#     max_vals = np.max(combined_matrix, axis=0)
+#     if n_components == 2:
+#         mean_1 = min_vals
+#         mean_2 = (min_vals + max_vals) / 2
+#         means_init = np.vstack([mean_1, mean_2])
+#     elif n_components == 3:
+#         mean_1 = min_vals
+#         mean_2 = (min_vals + max_vals) / 2
+#         mean_3 = max_vals
+#         means_init = np.vstack([mean_1, mean_2, mean_3])
+#     elif n_components > 3:
+#         means_init = np.zeros((n_components, combined_matrix.shape[1]))
+#         means_init[0] = min_vals
+#         means_init[-1] = max_vals
+#         for i in range(1, n_components - 1):
+#             alpha = i / (n_components - 1)
+#             means_init[i] = min_vals + alpha * (max_vals - min_vals)
+#     else:
+#         raise ValueError("n_components must be greater than or equal to 2.")
+#     gmm_model = GaussianMixture(
+#         n_components=n_components, max_iter=max_iter, n_init=n_init, init_params=init_params,
+#         means_init=means_init, tol=tol,
+#         random_state=random_state, covariance_type=covariance_type, reg_covar=reg_covar)
+#     gmm_model.fit(combined_matrix)
+#     cluster_assignments = gmm_model.predict(combined_matrix)
+#     probabilities = gmm_model.predict_proba(combined_matrix)
+#     probabilities_rounded = np.round(probabilities, 4)
+#     row_sums = np.sum(probabilities_rounded, axis=1)
+#     adjustments = 1 - row_sums
+#     max_indices = np.argmax(probabilities_rounded, axis=1)  # Find the index of the highest value in each row
+#     probabilities_rounded[np.arange(probabilities_rounded.shape[0]), max_indices] += adjustments  # Add the difference to the highest probability in each row
+#     return gmm_model, cluster_assignments, probabilities_rounded
+
+# def perform_gmm(combined_matrix, n_components=2, max_iter=1000, n_init=1000, init_params='random', tol=1e-3, random_state=1):
+#     """
+#     Perform Gaussian Mixture Modeling (GMM) on the combined matrix and return the probabilities of cluster assignment.
+#     """
+#     min_vals = np.min(combined_matrix, axis=0)
+#     max_vals = np.max(combined_matrix, axis=0)
+#     if n_components == 2:
+#         mean_1 = min_vals
+#         mean_2 = (min_vals + max_vals) / 2
+#         means_init = np.vstack([mean_1, mean_2])
+#     elif n_components == 3:
+#         mean_1 = min_vals
+#         mean_2 = (min_vals + max_vals) / 2
+#         mean_3 = max_vals
+#         means_init = np.vstack([mean_1, mean_2, mean_3])
+#     elif n_components > 3:
+#         means_init = np.zeros((n_components, combined_matrix.shape[1]))
+#         means_init[0] = min_vals
+#         means_init[-1] = max_vals
+#         for i in range(1, n_components - 1):
+#             alpha = i / (n_components - 1)
+#             means_init[i] = min_vals + alpha * (max_vals - min_vals)
+#     else:
+#         raise ValueError("n_components must be greater than or equal to 2.")
+#     gmm_model = GaussianMixture(
+#         n_components=n_components, max_iter=max_iter, n_init=n_init,
+#         means_init=means_init, init_params=init_params, tol=tol,
+#         random_state=random_state, covariance_type='diag', reg_covar=1e-3)
+#     gmm_model.fit(combined_matrix)
+#     cluster_assignments = gmm_model.predict(combined_matrix)
+#     probabilities = gmm_model.predict_proba(combined_matrix)
+#     return gmm_model, cluster_assignments, probabilities
 
 def extract_number_after_n(filename):
     # Split the string by '_n' and take the last part
@@ -329,6 +546,9 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
     #assigned_clusters_sorted = assigned_clusters[sorted_indices]
     sample_ids = np.arange(1, len(sample_names_sorted) + 1)
     sample_ids_str = [f'{id:0{len(str(len(sample_names)))}d}' for id in sample_ids]
+    # Save probabilities, sample names, and IDs to a TSV file
+    # filename=f"cluster_probabilities_ids_k{n_components}.tsv"
+    # save_probs_ids_tsv(probabilities_sorted, sample_names_sorted, sample_ids_str, sample_mapping_nums, path, filename)
     # Initialize PdfPages to save plots into a multi-page PDF
     with PdfPages(f'{path}/{pdf_filename}') as pdf:
         # Number of full plots needed (each with up to three columns)
@@ -336,6 +556,7 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
         # print("len(sample_names_sorted)", len(sample_names_sorted))
         # print("max_samples_per_plot", max_samples_per_plot)
         # print("num_plots", num_plots)
+
         for plot_idx in range(num_plots):
             start_idx = plot_idx * max_samples_per_plot
             end_idx = min(start_idx + max_samples_per_plot, len(sample_names_sorted))
@@ -354,6 +575,7 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             elif samples_on_plot/max_samples_per_plot < 0.75:
                 figH = 9
                 scaleSmpCol = 0.75
+
             columns_on_plot = min(samples_on_plot//int(max_samples_per_column*scaleSmpCol) + 1, columns_per_plot)
             sample_ids_on_plot = sample_ids_str[start_idx:end_idx]  # Top to bottom order now
             #print("len(sample_ids_on_plot)", len(sample_ids_on_plot))
@@ -366,6 +588,12 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             #figW = 5.5
             figH = 12
             #figH = 8
+            # # if samples_on_plot/max_samples_per_plot< 0.25:
+            # #     figH = 5
+            # if samples_on_plot/max_samples_per_plot < 0.5:
+            #     figH = 6
+            # elif samples_on_plot/max_samples_per_plot < 0.75:
+            #     figH = 9    
             if plot_idx == num_plots-1:
                 max_samples_per_column = samples_on_plot//columns_on_plot + samples_on_plot%columns_on_plot     
                 # print("max_samples_per_column", max_samples_per_column)
@@ -412,8 +640,95 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             png_filename = f'{path}/cluster_probabilities_plot_{plot_idx + 1}.png'
             fig.savefig(png_filename, dpi=300)
             plt.close()
+    # with open(f'{path}/sample_legend_k{n_components}.txt', 'w') as f:
+    #     for i, sample_name in enumerate(sample_names_sorted):
+    #         f.write(f'{sample_ids[i]:0{len(str(len(sample_names_sorted)))}d}: {sample_name}\n')
 
+# def find_matching_files(damage_dir, sample_names):
+#     file_dict = {}
+#     for sample_name in sample_names:
+#         file_pattern = f'{damage_dir}/*{sample_name}*.prof'
+#         matching_files = glob.glob(file_pattern)
+#         fivep_file = next((f for f in matching_files if '_5p.prof' in f), None)
+#         threep_file = next((f for f in matching_files if '_3p.prof' in f), None)
+#         if fivep_file and threep_file:
+#             file_dict[sample_name] = {'5p': fivep_file, '3p': threep_file}
+#     return file_dict
 
+# def find_matching_files(damage_dir, sample_names):
+#     # Load all .prof files from the directory once
+#     all_prof_files = glob.glob(f'{damage_dir}/*.prof')
+    
+#     # Create a dictionary to store matched files for each sample
+#     file_dict = {sample_name: {'5p': None, '3p': None} for sample_name in sample_names}
+    
+#     # Iterate through all files and match them with sample names
+#     for file_path in all_prof_files:
+#         # Get the basename of the file to check for sample matches
+#         base_name = os.path.basename(file_path)
+        
+#         for sample_name in sample_names:
+#             if sample_name in base_name:
+#                 if '_5p.prof' in base_name:
+#                     file_dict[sample_name]['5p'] = file_path
+#                 elif '_3p.prof' in base_name:
+#                     file_dict[sample_name]['3p'] = file_path
+    
+#     # Remove entries that don't have both files matched
+#     file_dict = {k: v for k, v in file_dict.items() if v['5p'] and v['3p']}
+    
+#     return file_dict
+
+# def plot_weighted_profiles(probabilities, sample_names, damage_paths, plot_path, reverse, method, n_components, pdf_filename="weighted_profiles.pdf"):
+#     """
+#     Calculate and plot weighted representative damage profiles based on the cluster probabilities,
+#     and save the plots to a multi-page PDF.
+#     """
+#     #print("probabilities", probabilities)
+#     #print("sample_names", sample_names)
+#     pdf_path = f'{plot_path}/{pdf_filename}'
+#     with PdfPages(pdf_path) as pdf:
+#         for cluster in range(n_components):
+#             # Initialize combined data dictionary with arrays of zeros instead of lists
+#             weighted_combined_data = {i: np.zeros(10) for i in range(10)}
+#             total_prob = 0
+#             for i, sample_name in enumerate(sample_names):
+#                 prob = probabilities[i, cluster]
+#                 if prob > 0:
+#                     file_dict = find_matching_files(damage_paths, [sample_name])
+#                     if sample_name not in file_dict:
+#                         continue
+#                     fivep_file = file_dict[sample_name]['5p']
+#                     threep_file = file_dict[sample_name]['3p']
+#                     fivep_data = pd.read_csv(fivep_file, delimiter='\t')["C>T"]
+#                     threep_data = pd.read_csv(threep_file, delimiter='\t')["G>A"]
+#                     if reverse:
+#                         threep_data_reversed = threep_data.iloc[::-1].reset_index(drop=True)
+#                     else:
+#                         threep_data_reversed = threep_data
+#                     combined_data = np.concatenate([fivep_data, threep_data_reversed])
+                    
+#                     # Weight and accumulate the combined data using arrays
+#                     for pos in range(10):
+#                         weighted_combined_data[pos] += combined_data[pos] * prob
+#                     total_prob += prob
+            
+#             # Normalize by total probability
+#             for pos in range(10):
+#                 if total_prob > 0:
+#                     weighted_combined_data[pos] /= total_prob
+            
+#             # Plotting the results
+#             fig, axs = plt.subplots(1, 2, figsize=(8, 3))
+#             plot_prof_substitutions(axs[0], weighted_combined_data, substitution_type='C>T', color='red', positions_range=(0, 5), xlabel="Position from 5' end")
+#             plot_prof_substitutions(axs[1], weighted_combined_data, substitution_type='G>A', color='blue', positions_range=(5, 10), xlabel="Position from 3' end")
+#             plt.suptitle(f'Representative Substitution Frequencies for Cluster {cluster + 1} ({method})')
+#             plt.tight_layout()
+#             pdf.savefig(fig)
+#             png_filename = f'{plot_path}/cluster__weighted_profiles_{cluster + 1}.png'
+#             #fig.savefig(png_filename, dpi=300)
+#             plt.close(fig)
+#     print(f"Weighted profiles saved to {pdf_path}")
 
 def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_path, reverse, method, n_components, pdf_filename="weighted_profiles.pdf"):
     """
@@ -441,14 +756,18 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
                 if prob > 0:
                     # Extract the combined data for the current sample directly from the combined_matrix
                     combined_data = combined_matrix[i]
+
                     # Split the combined data into 5p and 3p components
                     fivep_data = combined_data[:5]  # First 5 positions for the 5p data
                     threep_data = combined_data[5:]  # Last 5 positions for the 3p data
+
                     # Reverse the 3p data if needed
                     if not reverse:
                         threep_data = threep_data[::-1]
+
                     # Concatenate the 5p and (potentially reversed) 3p data
                     combined_data = np.concatenate([fivep_data, threep_data])
+
                     # Weight and accumulate the combined data using arrays
                     for pos in range(10):
                         weighted_combined_data[pos] += combined_data[pos] * prob
@@ -566,11 +885,25 @@ def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns,
     """
     # Load all files once
     matrix_files = glob.glob(os.path.join(directory, '*.prof'))
+    
     # # Extract basenames and classify them
     basenames = set(os.path.basename(f).rsplit('_', 1)[0] for f in matrix_files)
+    # no_basenames = [basename for basename in basenames if "dnone" in basename]
+    # mid_basenames = [basename for basename in basenames if "dmid" in basename]
+    # high_basenames = [basename for basename in basenames if "dhigh" in basename]
+
+    # # Determine how many to remove based on balance
+    # no_base_rm = set(random.sample(no_basenames, int(len(no_basenames) * balance[0])))
+    # mid_base_rm = set(random.sample(mid_basenames, int(len(mid_basenames) * balance[1])))
+    # high_base_rm = set(random.sample(high_basenames, int(len(high_basenames) * balance[2])))
+
+    # # Filter out basenames to be removed
+    # filtered_basenames = basenames - no_base_rm - mid_base_rm - high_base_rm
+
     # Create dictionaries to store loaded matrices
     matrix_5p_dict = {}
     matrix_3p_dict = {}
+
     # Pre-load all matrices into dictionaries
     for file_path in matrix_files:
         basename = os.path.basename(file_path).rsplit('_', 1)[0]
@@ -580,23 +913,29 @@ def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns,
             matrix_3p_dict[basename] = load_matrix(file_path)
         elif '5p' in file_path:
             matrix_5p_dict[basename] = load_matrix(file_path)
+
     combined_matrix = []
     sample_names = []
     sample_names_outsourced = []
+
     # Iterate over the filtered basenames
     for basename in basenames:
         # Get the matrices from the preloaded dictionaries
         matrix_3p = matrix_3p_dict.get(basename)
         matrix_5p = matrix_5p_dict.get(basename)
+
         # Check if matrices are loaded correctly and valid
         if matrix_3p is None or matrix_5p is None or check_for_nan(matrix_3p) or check_for_nan(matrix_5p):
             continue
+
         # Extract the relevant columns and concatenate them
         column_5p_data = matrix_5p.iloc[:, column_5p - 1].values
         column_3p_data = matrix_3p.iloc[:, column_3p - 1].values
         concatenated_row = np.concatenate([column_5p_data, column_3p_data[::-1]])
+
         # Determine the number of mapped reads
         nMapped = int(basename.split('_n')[-1])
+
         # Add the concatenated row based on conditions
         if nMapped < 1000 and validate_concatenated_row(concatenated_row):
             combined_matrix.append(concatenated_row)
@@ -606,6 +945,7 @@ def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns,
             sample_names.append(basename)
         else:
             sample_names_outsourced.append(basename)
+
     # Convert the combined matrix to a NumPy array for further processing
     combined_matrix = np.array(combined_matrix)
     print(f"Combined matrix shape: {combined_matrix.shape}")
@@ -643,6 +983,20 @@ def main():
     print("After process dir", now)
 
     original_matrix = combined_matrix
+
+    # # Add a small constant to avoid log(0)
+    # small_constant = 1e-10
+    # matrix_safe = np.where(combined_matrix == 0, small_constant, combined_matrix)
+    # # Apply the natural logarithm
+    # log_matrix = np.log(matrix_safe)
+    # #matrix_safe = combined_matrix + small_constant
+    # #weights = np.array([2, 2, 1, 1, 0.5, 0.5, 1, 1, 2, 2])
+    # combined_matrix = log_matrix
+    # # weighted_matrix = combined_matrix * weights
+    # # combined_matrix = weighted_matrix
+    # Add a small constant to avoid log(0)
+    # small_constant = 1e-10
+    # matrix_safe = combined_matrix + small_constant
 
     # # Mask out zeros by replacing them with np.inf (so they are ignored in the min calculation)
     masked_matrix = np.where(combined_matrix == 0, np.inf, combined_matrix)
