@@ -43,7 +43,7 @@ def check_for_nan(matrix):
 
 def load_matrix(file_path):
     """Load the matrix from a file."""
-    return pd.read_csv(file_path, sep='\s+')
+    return pd.read_csv(file_path, sep=r'\s+')
 
 def create_plot_directories(base_path, method, k_iter):
     """
@@ -488,7 +488,6 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
         for cluster in range(n_components):
             # Initialize combined data dictionary with scalar zeros
             weighted_combined_data = {i: 0.0 for i in range(10)}
-            print(weighted_combined_data)
             total_prob = 0
             for i, sample_name in enumerate(sample_names):
                 prob = probabilities[i, cluster]
@@ -564,11 +563,9 @@ def save_weighted_profiles_to_tsv(weighted_combined_data, output_dir, prefix="no
         "G>A", "G>C", "G>T", "T>A", "T>C", "T>G"
     ]
     
-    # Initialize dataframes with zeroed substitution columns
-    data_5p = pd.DataFrame(0, index=range(5), columns=substitution_columns)
-    data_3p = pd.DataFrame(0, index=range(5), columns=substitution_columns)
-
-    print(weighted_combined_data)
+    # Initialize dataframes with zeroed substitution columns as floats
+    data_5p = pd.DataFrame(0.0, index=range(5), columns=substitution_columns)
+    data_3p = pd.DataFrame(0.0, index=range(5), columns=substitution_columns)
     
     # Fill the relevant columns with weighted frequencies
     for i in range(5):  # 5' positions: 0, 1, 2, 3, 4
@@ -584,8 +581,8 @@ def save_weighted_profiles_to_tsv(weighted_combined_data, output_dir, prefix="no
     data_5p.to_csv(tsv_5p_path, sep="\t", index=False)
     data_3p.to_csv(tsv_3p_path, sep="\t", index=False)
     
-    print(f"Saved 5' profile to: {tsv_5p_path}")
-    print(f"Saved 3' profile to: {tsv_3p_path}")
+    # print(f"Saved 5' profile to: {tsv_5p_path}")
+    # print(f"Saved 3' profile to: {tsv_3p_path}")
 
 
 def validate_concatenated_row(concatenated_row):
@@ -715,23 +712,27 @@ def main():
 
     print_package_versions()
 
-    parser = argparse.ArgumentParser(description='Process and plot damage profiles.')
-    parser.add_argument('-i', type=str, required=True,
+    parser = argparse.ArgumentParser(description='Cluster and plot damage profiles.')
+    parser.add_argument('-i', type=str, required=True, metavar='INPUT_DIR',
                         help='Path to the directory containing the profiles generated with bam2prof.')
-    parser.add_argument('-o', type=str, required=True,
+    parser.add_argument('-o', type=str, required=True, metavar='OUTPUT_DIR',
                         help='Path where your plots will be saved.')
-    parser.add_argument('-k', type=int, default=4, help='Run clustering from 2 to k. (default: %(default)s)')
+    parser.add_argument('-k', type=int, default=4, metavar='Clusters',
+                        help='Run clustering from 2 to k. (default: %(default)s)')
+    parser.add_argument('-q', type=int, default=0, metavar='Less Plots (faster)',
+                        help='Do not plot probability per sample. TSV only. [off=0,on=0](default: %(default)s)')
 
     args = parser.parse_args()
     input_dir = args.i
     plot_path = args.o
     cluster_k = args.k
+    less_plots = args.q
 
     # Create the output directory if it doesn't exist
     os.makedirs(plot_path, exist_ok=True)
 
     now = datetime.datetime.now()
-    print("Before process dir", now)
+    print("Preparing Matrix", now)
     # Process all matrices and get results
     combined_matrix, sample_names, sample_names_outsourced = process_directory_combined(
         input_dir,
@@ -742,7 +743,7 @@ def main():
         column_3p=7
     )
     now = datetime.datetime.now()
-    print("After process dir", now)
+    print("Preparing Matrix Done", now)
 
     original_matrix = combined_matrix
 
@@ -765,53 +766,59 @@ def main():
     # Iterate over k_iter for GMM clustering
     for k_iter in range(2, cluster_k+1):
         print(f'Running clustering for k = {k_iter}...')
+        pdf_list = []
         
         # Perform GMM clustering
-        now = datetime.datetime.now()
-        print("Before cluster", now)
         gmm_model, gmm_cluster_assignments, gmm_probabilities = perform_gmm(
             combined_matrix, n_components=k_iter)
-
         now = datetime.datetime.now()
-        print("Before PCA", now)
+        print("Clustering Done", now)
+
         # Make PCA Plot with gradient
         transformed_data, explained_variance, pca = perform_pca(combined_matrix, None)
         pca_plot_path = create_plot_directories(plot_path, "PCA", k_iter)
+        now = datetime.datetime.now()
+        print("PCA Done", now)
+        
         distances = plot_pca_gradient(
             transformed_data, sample_names, gmm_probabilities, pca_plot_path,
             explained_variance=explained_variance, pdf_filename=f"pca_k{k_iter}.pdf")
         pdf1 = os.path.join(pca_plot_path, f"pca_k{k_iter}.pdf")
+        pdf_list.append(pdf1)
 
-        now = datetime.datetime.now()
-        print("Before plot cluster", now)
-        gmm_plot_path = create_plot_directories(plot_path, "GMM", k_iter)
-        plot_cluster_probabilities_sorted_multicol(
-            gmm_probabilities, sample_names, gmm_plot_path, k_iter,
-            pdf_filename=f"cluster_report_k{k_iter}.pdf")
-        pdf2 = os.path.join(gmm_plot_path, f"cluster_report_k{k_iter}.pdf")
+
+        gmm_plot_path = create_plot_directories(plot_path, "GMM", k_iter)   
+        if less_plots == 0: 
+            plot_cluster_probabilities_sorted_multicol(
+                gmm_probabilities, sample_names, gmm_plot_path, k_iter,
+                pdf_filename=f"cluster_report_k{k_iter}.pdf")
+            pdf2 = os.path.join(gmm_plot_path, f"cluster_report_k{k_iter}.pdf")
+            pdf_list.append(pdf2)
         
-        now = datetime.datetime.now()
-        print("Before plot weighted", now)
         plot_weighted_profiles(
             gmm_probabilities, sample_names, original_matrix, gmm_plot_path, True,
             "GMM", k_iter, pdf_filename=f"weighted_profiles_k{k_iter}.pdf")
         pdf3 = os.path.join(gmm_plot_path, f"weighted_profiles_k{k_iter}.pdf")
+        pdf_list.append(pdf3)
 
         now = datetime.datetime.now()
-        print("Before id tsv", now)
+        print("Plotting Done", now)
+
         save_probs_ids_tsv(gmm_probabilities, sample_names, distances, gmm_plot_path, k_iter, filename_prefix="cluster_report_k")
+        now = datetime.datetime.now()
+        print("Export TSV Done", now)
     
-        pdf_list = [pdf1, pdf2, pdf3]
+        #pdf_list = [pdf1, pdf2, pdf3]
         
         # Merge the PDFs into a single file
         merged_pdf_path = os.path.join(plot_path, f"damage_report_k{k_iter}.pdf")
         merge_pdfs(pdf_list, merged_pdf_path)
-    
+
         # Scale the final merged PDF to match the width of the cluster report
         target_width = 8.5 * 72  # 72 points per inch
         scaled_pdf_path = os.path.join(plot_path, f"damage_report_k{k_iter}.pdf")
         scale_pdf(merged_pdf_path, scaled_pdf_path, target_width)
-    
+        
         print(f"PDFs merged and scaled to {target_width/72:.2f} inches width. Final PDF: {scaled_pdf_path}")
 
 if __name__ == '__main__':
