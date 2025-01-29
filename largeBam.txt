@@ -1,1 +1,0 @@
-/home/databases/empirical_samples/Homo_sapiens/2014_Fu_Nature/Ust_Ishim.hg19_1000g.all.bam

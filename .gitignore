@@ -1,1 +1,6 @@
 devTests/
+AdDeam.egg-info/
+dist/
+AdDeam/lib/htslib/
+AdDeam/lib/libgab/
+AdDeam/lib/samtools/

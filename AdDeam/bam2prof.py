@@ -9,9 +9,14 @@ def run_bam2prof(args_list):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     # Construct the full path to the bam2prof executable
     bam2prof_path = os.path.join(script_dir, 'src', 'bam2prof')
+
+    # Ensure the binary is executable before running
+    if not os.access(bam2prof_path, os.X_OK):
+        os.chmod(bam2prof_path, 0o755)
+
     # Prepare the full command
     command = [bam2prof_path] + args_list
-    
+
     # Print the command that will be executed
     print(f"Executing command: {' '.join(command)}")
 
@@ -53,34 +58,6 @@ def main():
     parser.add_argument('-dp', action='store_true', help='Output in damage-patterns format (default: %(default)s)')
     parser.add_argument('-q', type=int, choices=[0, 1], default=1, help='Do not print why reads are skipped (default: %(default)s)')
     parser.add_argument('-threads', type=int, default=1, help='Number of threads. One file per thread (default: %(default)s)')
-
-
-
-    # parser.add_argument('bam_files', nargs='?', help='File with paths to BAM files; one per line.')
-    # parser.add_argument('-minq', type=int, default=0, help='Minimum base quality (default: %(default)s)')
-    # parser.add_argument('-minl', type=int, default=35, help='Minimum fragment/read length (default: %(default)s)')
-    # parser.add_argument('-endo', type=int, default=0, help='Endo flag (default: %(default)s)')
-    # parser.add_argument('-length', type=int, default=5, help='Length (default: %(default)s)')
-    # parser.add_argument('-err', type=float, default=0, help='Error rate (default: %(default)s)')
-    # parser.add_argument('-log', action='store_true', help='Logarithmic scale (default: %(default)s)')
-    # parser.add_argument('-bed', help='BED file for positions')
-    # parser.add_argument('-mask', help='BED file for mask positions')
-    # parser.add_argument('-paired', action='store_true', help='Allow paired reads (default: %(default)s)')
-    # parser.add_argument('-meta', action='store_true', help='One Profile per unique reference (default: %(default)s)')
-    # parser.add_argument('-classic', action='store_true', help='One Profile per bam file (default: %(default)s)')
-    # parser.add_argument('-precision', type=float, default=0, help='Set minimum decimal precision for substitution frequency computation (default: %(default)s [= all alignments used]). Increase speed by setting to either (from faster to slower): 0.001, 0.0001, 0.00001, ... ) ')
-    # parser.add_argument('-minAligned', type=int, default=10000000, help='Number of aligned sequences after which substitution patterns are checked if frequencies converge (default: %(default)s)')
-    # parser.add_argument('-ref-id', help='Specify reference ID')
-    # parser.add_argument('-single', action='store_true', help='Single strand library (default: %(default)s)')
-    # parser.add_argument('-double', action='store_true', help='Double strand library (default: %(default)s)')
-    # parser.add_argument('-both', action='store_true', help='Report both C->T and G->A (default: %(default)s)')
-    # parser.add_argument('-o', help='Output directory')
-    # parser.add_argument('-dp', action='store_true', help='Output in damage-patterns format (default: %(default)s)')
-    # parser.add_argument('-q', type=int, choices=[0, 1], default=1, help='Do not print why reads are skipped (default: %(default)s)')
-    # parser.add_argument('-threads', type=int, default=1, help='Number of threads (default: %(default)s)')
-
-    # parser.add_argument('-5p', help='Output profile for the 5\' end')
-    # parser.add_argument('-3p', help='Output profile for the 3\' end')
 
     args = parser.parse_args()
 
