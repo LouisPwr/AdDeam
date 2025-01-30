@@ -1,5 +1,5 @@
-{% set version = "0.1.0" %}
-{% set sha256 = "<SHA256_OF_TARBALL>" %}  # Replace with actual SHA256
+{% set version = "1.0.0" %}
+{% set sha256 = "76e5c219bf2266efcf1a84ca07642403463a73eb6d8435efb09a56fe7c761e83" %}  # Replace with actual SHA256
 
 package:
   name: addeam
