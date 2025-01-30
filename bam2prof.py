@@ -6,17 +6,28 @@ from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
+def find_bam2prof():
+    """Find the compiled `bam2prof` binary in development and Conda environments."""
+    
+    # Case 1: Inside a Conda-installed package (expected after Conda installation)
+    conda_bin = Path(sys.prefix) / "bin" / "bam2prof"
+    if conda_bin.exists():
+        return conda_bin
+
+    # Case 2: Development mode (binary inside `src/` directory)
+    dev_bin = Path(__file__).parent / "src" / "bam2prof"
+    if dev_bin.exists():
+        return dev_bin
+
+    # If neither exists, exit with an error
+    print("Error: bam2prof binary not found!", file=sys.stderr)
+    sys.exit(1)
+
 def run_bam2prof(args_list):
-    # Path to *this* Python file's directory
-    this_dir = Path(__file__).parent
-    # So the compiled binary is AdDeam/bin/bam2prof
-    bam2prof_path = this_dir / "bin" / "bam2prof"
+    """Run the compiled `bam2prof` binary with the given arguments."""
+    bam2prof_path = find_bam2prof()
 
-    if not bam2prof_path.exists():
-        print(f"Error: bam2prof binary not found at {bam2prof_path}", file=sys.stderr)
-        sys.exit(1)
-
-    # Make sure it's executable
+    # Ensure the binary is executable
     bam2prof_path.chmod(0o755)
 
     command = [str(bam2prof_path)] + args_list
