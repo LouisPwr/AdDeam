@@ -33,12 +33,13 @@ requirements:
 
 test:
   commands:
-    - bam2prof --help
-    - python -c "import AdDeam; print(AdDeam.__version__)"
+    - bam2prof --help  # Ensure compiled binary works
+    - bam2prof.py --help  # Ensure Python script calls the binary correctly
+    - cluster.py --help  # Ensure Python CLI tool is installed
 
 about:
-  home: https://github.com/LouisPwr/AdDeam
-  license:  GPLv3
+  home: "https://github.com/LouisPwr/AdDeam"
+  license: GPLv3
   summary: "A Fast and Scalable Tool for Estimating and Clustering Reference-Level Damage Profiles."
 
 extra:
