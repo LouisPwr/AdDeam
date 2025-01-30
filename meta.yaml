@@ -1,0 +1,49 @@
+{% set version = "0.1.0" %}
+{% set sha256 = "<SHA256_OF_TARBALL>" %}  # Replace with actual SHA256
+
+package:
+  name: addeam
+  version: {{ version|replace("-", ".")  }}
+
+source:
+  url: https://github.com/yourusername/AdDeam/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  script: bash conda_build.sh
+  skip: True  # [win]  # Skip Windows (modify if needed)
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - {{ compiler('c') }}
+    - make
+  run:
+    - python >=3.7
+    - numpy
+    - pandas
+    - matplotlib
+    - scikit-learn
+    - scipy
+    - opencv
+    - pypdf2
+    - cython
+    - bottleneck
+
+test:
+  commands:
+    - bam2prof --help
+    - python -c "import AdDeam; print(AdDeam.__version__)"
+
+about:
+  home: https://github.com/LouisPwr/AdDeam
+  license:  GPLv3
+  summary: "A Fast and Scalable Tool for Estimating and Clustering Reference-Level Damage Profiles."
+
+extra:
+  identifiers:
+    - biotools:addeam
+  recipe-maintainers:
+    - gabriel-renaud
+    - louis-kraft

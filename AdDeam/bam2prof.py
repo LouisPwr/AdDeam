@@ -2,31 +2,30 @@ import subprocess
 import argparse
 import os
 import sys
+from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+
 def run_bam2prof(args_list):
-    # Get the directory of the current Python script (wrapper)
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Construct the full path to the bam2prof executable
-    bam2prof_path = os.path.join(script_dir, 'src', 'bam2prof')
+    # Path to *this* Python file's directory
+    this_dir = Path(__file__).parent
+    # So the compiled binary is AdDeam/bin/bam2prof
+    bam2prof_path = this_dir / "bin" / "bam2prof"
 
-    # Ensure the binary is executable before running
-    if not os.access(bam2prof_path, os.X_OK):
-        os.chmod(bam2prof_path, 0o755)
+    if not bam2prof_path.exists():
+        print(f"Error: bam2prof binary not found at {bam2prof_path}", file=sys.stderr)
+        sys.exit(1)
 
-    # Prepare the full command
-    command = [bam2prof_path] + args_list
+    # Make sure it's executable
+    bam2prof_path.chmod(0o755)
 
-    # Print the command that will be executed
+    command = [str(bam2prof_path)] + args_list
     print(f"Executing command: {' '.join(command)}")
+    result = subprocess.run(command, capture_output=True, text=True)
 
-    # Use subprocess to run bam2prof and capture stderr and stdout in real-time
-    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    
-    # Print the captured stdout and stderr to the terminal, but only if they are not empty
-    if result.stdout.strip():  # Check if stdout is not empty or just whitespace
+    if result.stdout.strip():
         print(result.stdout)
-    if result.stderr.strip():  # Check if stderr is not empty or just whitespace
+    if result.stderr.strip():
         print(result.stderr, file=sys.stderr)
 
     return result
