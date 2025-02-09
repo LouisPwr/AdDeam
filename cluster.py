@@ -195,7 +195,12 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
         for cluster in range(n_clusters)
     }
     # Calculate minimum probabilities per cluster
-    min_probabilities = [probabilities[cluster_assignments == cluster, cluster].min() for cluster in range(n_clusters)]
+    #min_probabilities = [probabilities[cluster_assignments == cluster, cluster].min() for cluster in range(n_clusters)]
+    min_probabilities = [
+        probabilities[cluster_assignments == cluster, cluster].min()
+        if np.any(cluster_assignments == cluster) else 0
+        for cluster in range(n_clusters)
+    ]
     # Create the figure
     fig_width = 8 + (n_clusters // 4) * 2  # Dynamically adjust width based on the number of clusters
     fig, ax = plt.subplots(figsize=(fig_width, 6))
@@ -656,7 +661,7 @@ def validate_concatenated_row(concatenated_row):
 #     print(f"Combined matrix shape: {combined_matrix.shape}")
 #     return combined_matrix, sample_names, sample_names_outsourced
 
-def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns, column_5p=6, column_3p=7, balance=[0, 0, 0]):
+def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns, minmap = 1000, column_5p=6, column_3p=7, balance=[0, 0, 0]):
     """
     Process all matrices in the directory and build a combined matrix for analysis.
     """
@@ -694,10 +699,10 @@ def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns,
         # Determine the number of mapped reads
         nMapped = int(basename.split('_n')[-1])
         # Add the concatenated row based on conditions
-        if nMapped < 1000 and validate_concatenated_row(concatenated_row):
+        if nMapped < minmap and validate_concatenated_row(concatenated_row):
             combined_matrix.append(concatenated_row)
             sample_names.append(basename)
-        elif nMapped >= 1000:
+        elif nMapped >= minmap:
             combined_matrix.append(concatenated_row)
             sample_names.append(basename)
         else:
@@ -720,13 +725,16 @@ def main():
     parser.add_argument('-k', type=int, default=4, metavar='Clusters',
                         help='Run clustering from 2 to k. (default: %(default)s)')
     parser.add_argument('-q', type=int, default=0, metavar='Less Plots (faster)',
-                        help='Do not plot probability per sample. TSV only. [off=0,on=0](default: %(default)s)')
+                        help='Do not plot probability per sample. TSV only. [off=0,on=1](default: %(default)s)')
+    parser.add_argument('-m', type=int, default=1000, metavar='Minimum Mapped Reads',
+                        help='Require at least m reads to be mapped to a reference to be included in clustering (default: %(default)s)')
 
     args = parser.parse_args()
     input_dir = args.i
     plot_path = args.o
     cluster_k = args.k
     less_plots = args.q
+    min_map = args.m
 
     # Create the output directory if it doesn't exist
     os.makedirs(plot_path, exist_ok=True)
@@ -739,6 +747,7 @@ def main():
         num_rows_5p=5,
         num_rows_3p=5,
         num_columns=1,
+        minmap = min_map,
         column_5p=6,
         column_3p=7
     )

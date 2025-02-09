@@ -43,4 +43,3 @@ diffprof:	diffprof.o  ReconsReferenceHTSLIB.o ../lib/libgab/libgab.a   ../lib/li
 
 clean :
 	rm -f *.o bam2prof diffprof
-
