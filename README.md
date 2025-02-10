@@ -16,6 +16,11 @@ To ensure optimal performance and accurate results, the BAM files used with AdDe
   
 - The BAM file should be **sorted**, as this improves performance, especially for large files, by enabling efficient access to aligned reads.
 
+### Adding Mismatch Annotations (MD Tags)
+To ensure that the BAM file includes mismatch annotations relative to the reference (MD tags), use `samtools calmd` as shown in the following template:
+
+    samtools calmd -b in_file.bam reference.fasta > out_file.bam
+
 ## Key Features
 AdDeam offers a variety of key features that make it a robust solution for damage profile generation and analysis:
 
