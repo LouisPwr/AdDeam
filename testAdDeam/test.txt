@@ -1,0 +1,6 @@
+high1_sorted_md.bam
+high2_sorted_md.bam
+low1_sorted_md.bam
+low2_sorted_md.bam
+mid1_sorted_md.bam
+mid2_sorted_md.bam

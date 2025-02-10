@@ -40,15 +40,16 @@ To install AdDeam using Conda, simply run:
 
     conda install -c bioconda addeam
 
-### 1. Install from Source
+### 2. Install from Source
 
     git clone https://github.com/LouisPwr/AdDeam
-    cd src && make
+    cd AdDeam/
+    cd src/ && make
     cd ..
     pip install -r requirements.txt
 
 Note:
-bam2prof is a C++ tool used by AdDeam that is fast and robust for generating damage profiles from BAM files.
+bam2prof is a C++ tool used by AdDeam that is fast and robust for generating damage profiles from BAM files. It relies on htslib and samtools.
 
 
 
@@ -63,8 +64,5 @@ Use the `bam2prof.py` wrapper to generate damage profiles from a list of BAM fil
 Once the profiles are generated, cluster and visualize them using `cluster.py`. Specify the input directory for the profiles and an output directory for the plots:
 
        python cluster.py -i profilesDir -o plotsDir
-
-
-
 
 

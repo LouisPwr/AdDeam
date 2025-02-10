@@ -489,7 +489,16 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
     #         plt.close(fig)
     # print(f"Weighted profiles saved to {pdf_path}")
     pdf_path = f'{plot_path}/{pdf_filename}'
+
+    global_max_damage = 0
+    for i, sample_name in enumerate(sample_names):
+        combined_data = combined_matrix[i]
+        max_sample_damage = np.max(combined_data)  # Find max value in this sample's damage profile
+        global_max_damage = max(global_max_damage, max_sample_damage)
+    global_max_damage += 0.1
+
     with PdfPages(pdf_path) as pdf:
+        max_damage = 0
         for cluster in range(n_components):
             # Initialize combined data dictionary with scalar zeros
             weighted_combined_data = {i: 0.0 for i in range(10)}
@@ -507,6 +516,7 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
                         threep_data = threep_data[::-1]
                     # Concatenate the 5p and (potentially reversed) 3p data
                     combined_data = np.concatenate([fivep_data, threep_data])
+                    #max_damage = max(max_damage, np.max(combined_data))
                     # Weight and accumulate the combined data using scalars
                     for pos in range(10):
                         weighted_combined_data[pos] += combined_data[pos] * prob
@@ -520,8 +530,8 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
             # Plotting the results
             save_weighted_profiles_to_tsv(weighted_combined_data, plot_path, f'cluster_{cluster + 1}_weighted_profile')
             fig, axs = plt.subplots(1, 2, figsize=(8, 3))
-            plot_prof_substitutions(axs[0], weighted_combined_data, substitution_type='C>T', color='red', positions_range=(0, 5), xlabel="Position from 5' end")
-            plot_prof_substitutions(axs[1], weighted_combined_data, substitution_type='G>A', color='blue', positions_range=(5, 10), xlabel="Position from 3' end")
+            plot_prof_substitutions(axs[0], weighted_combined_data, global_max_damage, substitution_type='C>T', color='red', positions_range=(0, 5), xlabel="Position from 5' end")
+            plot_prof_substitutions(axs[1], weighted_combined_data, global_max_damage, substitution_type='G>A', color='blue', positions_range=(5, 10), xlabel="Position from 3' end")
             plt.suptitle(f'Representative Substitution Frequencies for Cluster {cluster + 1} ({method})')
             plt.tight_layout()
             pdf.savefig(fig)
@@ -532,10 +542,11 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
 
 
 
-def plot_prof_substitutions(ax, all_combined_data, substitution_type='C>T', color='red', positions_range=(0, 5), xlabel="Position from 5' end"):
+def plot_prof_substitutions(ax, all_combined_data, max_dam, substitution_type='C>T', color='red', positions_range=(0, 5), xlabel="Position from 5' end"):
     """
     Create a scatter plot with a continuous line for substitutions.
     """
+    #max_dam = max_dam + 0.1
     positions = list(range(*positions_range))
     if substitution_type == 'G>A':
         x_labels = [-4, -3, -2, -1, 0]
@@ -545,7 +556,7 @@ def plot_prof_substitutions(ax, all_combined_data, substitution_type='C>T', colo
     ax.plot(positions, frequencies, color=color, linestyle='-', marker='o')
     ax.set_xlabel(xlabel, fontsize=10)
     ax.set_ylabel(f'{substitution_type} Substitution Frequency', fontsize=10)
-    ax.set_ylim(0, 0.6)
+    ax.set_ylim(0, max_dam)
     ax.set_xticks(positions)
     ax.set_xticklabels(x_labels)
     ax.grid(axis='y', linestyle='--')
