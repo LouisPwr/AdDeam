@@ -168,27 +168,27 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
     pc1 = transformed_data[:, 0]
     pc2 = transformed_data[:, 1]
     # Compute cluster centers (centroids)
-    cluster_centers = []
-    for cluster in range(n_clusters):
-        cluster_points = transformed_data[cluster_assignments == cluster]
-        cluster_center = cluster_points.mean(axis=0)  # Calculate centroid
-        cluster_centers.append(cluster_center)
+    # cluster_centers = []
+    # for cluster in range(n_clusters):
+    #     cluster_points = transformed_data[cluster_assignments == cluster]
+    #     cluster_center = cluster_points.mean(axis=0)  # Calculate centroid
+    #     cluster_centers.append(cluster_center)
     # Compute distances from each sample to its cluster center
-    distances = []
-    max_distances = [0] * n_clusters  # Keep track of max distance per cluster
-    # Calculate distances and determine the max distance per cluster
-    for i, cluster in enumerate(cluster_assignments):
-        center = cluster_centers[cluster]
-        distance = euclidean(transformed_data[i], center)
-        distances.append(distance)
-        if distance > max_distances[cluster]:
-            max_distances[cluster] = distance
-    # Normalize distances by dividing each distance by the max distance in its cluster
-    normalized_distances = []
-    for i, cluster in enumerate(cluster_assignments):
-        normalized_distance = distances[i] / max_distances[cluster] if max_distances[cluster] != 0 else 0
-        normalized_distances.append(normalized_distance)
-    normalized_distances = np.round(normalized_distances, 4)
+    # distances = []
+    # max_distances = [0] * n_clusters  # Keep track of max distance per cluster
+    # # Calculate distances and determine the max distance per cluster
+    # for i, cluster in enumerate(cluster_assignments):
+    #     center = cluster_centers[cluster]
+    #     distance = euclidean(transformed_data[i], center)
+    #     distances.append(distance)
+    #     if distance > max_distances[cluster]:
+    #         max_distances[cluster] = distance
+    # # Normalize distances by dividing each distance by the max distance in its cluster
+    # normalized_distances = []
+    # for i, cluster in enumerate(cluster_assignments):
+    #     normalized_distance = distances[i] / max_distances[cluster] if max_distances[cluster] != 0 else 0
+    #     normalized_distances.append(normalized_distance)
+    # normalized_distances = np.round(normalized_distances, 4)
     # Create a truncated colormap for each cluster based on its color
     cmap_dict = {
         cluster: create_truncated_colormap(colors[cluster])
@@ -270,9 +270,39 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
         fig.savefig(png_filename, dpi=300)
         plt.close(fig)
     
-    distance_report = {name: norm_dist for name, norm_dist in zip(sample_names, normalized_distances)}
-    return distance_report  # Optionally return the normalized distances for further analysis
+    #distance_report = {name: norm_dist for name, norm_dist in zip(sample_names, normalized_distances)}
+    #return distance_report  # Optionally return the normalized distances for further analysis
 
+def compute_normalized_distances(transformed_data, cluster_assignments, sample_names, n_clusters):
+    """
+    Compute normalized distances of samples from their assigned cluster centers.
+    """
+    cluster_centers = []
+    for cluster in range(n_clusters):
+        cluster_points = transformed_data[cluster_assignments == cluster]
+        cluster_center = cluster_points.mean(axis=0)  # Compute centroid
+        cluster_centers.append(cluster_center)
+
+    distances = []
+    max_distances = [0] * n_clusters  # Track max distance per cluster
+
+    for i, cluster in enumerate(cluster_assignments):
+        center = cluster_centers[cluster]
+        distance = euclidean(transformed_data[i], center)
+        distances.append(distance)
+        max_distances[cluster] = max(max_distances[cluster], distance)
+
+    # Normalize distances
+    normalized_distances = [
+        (distances[i] / max_distances[cluster]) if max_distances[cluster] != 0 else 0
+        for i, cluster in enumerate(cluster_assignments)
+    ]
+
+    # Round distances and create report
+    normalized_distances = np.round(normalized_distances, 4)
+    distance_report = {name: norm_dist for name, norm_dist in zip(sample_names, normalized_distances)}
+
+    return distance_report
 
 
 
@@ -797,15 +827,18 @@ def main():
         # Make PCA Plot with gradient
         transformed_data, explained_variance, pca = perform_pca(combined_matrix, None)
         pca_plot_path = create_plot_directories(plot_path, "PCA", k_iter)
+        n_clu = gmm_probabilities.shape[1]
+        cluster_assignments = np.argmax(gmm_probabilities, axis=1)
+        distances = compute_normalized_distances(transformed_data, cluster_assignments, sample_names, n_clu)
         now = datetime.datetime.now()
         print("PCA Done", now)
         
-        distances = plot_pca_gradient(
-            transformed_data, sample_names, gmm_probabilities, pca_plot_path,
-            explained_variance=explained_variance, pdf_filename=f"pca_k{k_iter}.pdf")
-        pdf1 = os.path.join(pca_plot_path, f"pca_k{k_iter}.pdf")
-        pdf_list.append(pdf1)
-
+        if less_plots == 0:
+            plot_pca_gradient(
+                transformed_data, sample_names, gmm_probabilities, pca_plot_path,
+                explained_variance=explained_variance, pdf_filename=f"pca_k{k_iter}.pdf")
+            pdf1 = os.path.join(pca_plot_path, f"pca_k{k_iter}.pdf")
+            pdf_list.append(pdf1)
 
         gmm_plot_path = create_plot_directories(plot_path, "GMM", k_iter)   
         if less_plots == 0: 
