@@ -10,7 +10,8 @@ def find_bam2prof():
     """Find the compiled `bam2prof` binary in development and Conda environments."""
     
     # Case 1: Inside a Conda-installed package (expected after Conda installation)
-    conda_bin = Path(sys.prefix) / "bin" / "bam2prof"
+    #conda_bin = Path(sys.prefix) / "bin" / "bam2prof"
+    conda_bin = Path(__file__).parent / "bam2prof"
     if conda_bin.exists():
         return conda_bin
 
@@ -22,6 +23,7 @@ def find_bam2prof():
     # If neither exists, exit with an error
     print("Error: bam2prof binary not found!", file=sys.stderr)
     sys.exit(1)
+
 
 def run_bam2prof(args_list):
     """Run the compiled `bam2prof` binary with the given arguments."""
