@@ -5,7 +5,7 @@ import os
 import random
 import glob
 import argparse
-from concurrent.futures import ProcessPoolExecutor
+#from concurrent.futures import ProcessPoolExecutor
 
 
 import numpy as np
@@ -24,6 +24,12 @@ from scipy.spatial.distance import euclidean
 import datetime
 
 from PyPDF2 import PdfReader, PdfWriter
+
+# os.environ["OMP_NUM_THREADS"] = "8"
+# os.environ["MKL_NUM_THREADS"] = "8"
+# os.environ["OPENBLAS_NUM_THREADS"] = "8"
+# os.environ["NUMEXPR_NUM_THREADS"] = "8"
+# os.environ["VECLIB_MAXIMUM_THREADS"] = "8"
 
 # ### Helper Functions ###
 
@@ -528,7 +534,6 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
     global_max_damage += 0.1
 
     with PdfPages(pdf_path) as pdf:
-        max_damage = 0
         for cluster in range(n_components):
             # Initialize combined data dictionary with scalar zeros
             weighted_combined_data = {i: 0.0 for i in range(10)}
@@ -546,7 +551,6 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
                         threep_data = threep_data[::-1]
                     # Concatenate the 5p and (potentially reversed) 3p data
                     combined_data = np.concatenate([fivep_data, threep_data])
-                    #max_damage = max(max_damage, np.max(combined_data))
                     # Weight and accumulate the combined data using scalars
                     for pos in range(10):
                         weighted_combined_data[pos] += combined_data[pos] * prob
