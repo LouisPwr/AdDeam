@@ -5,6 +5,9 @@
 #include <omp.h>
 #endif
 
+// Originally written by Gabriel Renaud & Thorfinn Korneliussen
+// Modified and extended by Louis Kraft
+
 
 int main (int argc, char *argv[]) {
 
