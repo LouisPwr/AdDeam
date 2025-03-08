@@ -1,45 +1,85 @@
 import subprocess
+import shutil
 import argparse
 import os
 import sys
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import logging
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# def find_bam2prof():
+#     """Find the compiled `bam2prof` binary in development and Conda environments."""
+    
+#     # Case 1: Inside a Conda-installed package (expected after Conda installation)
+#     #conda_bin = Path(sys.prefix) / "bin" / "bam2prof"
+#     conda_bin = Path(__file__).parent / "bam2prof"
+#     if conda_bin.exists():
+#         return conda_bin
+
+#     # Case 2: Development mode (binary inside `src/` directory)
+#     dev_bin = Path(__file__).parent / "src" / "bam2prof"
+#     if dev_bin.exists():
+#         return dev_bin
+
+#     # If neither exists, exit with an error
+#     print("Error: bam2prof binary not found!", file=sys.stderr)
+#     sys.exit(1)
 
 def find_bam2prof():
-    """Find the compiled `bam2prof` binary in development and Conda environments."""
+    """
+    Locate the bam2prof binary.
     
-    # Case 1: Inside a Conda-installed package (expected after Conda installation)
-    #conda_bin = Path(sys.prefix) / "bin" / "bam2prof"
-    conda_bin = Path(__file__).parent / "bam2prof"
-    if conda_bin.exists():
-        return conda_bin
+    1. Try to locate it using PATH (e.g. after installation).
+    2. Check the directory of the current script.
+    3. Check the src/ subdirectory, which is useful for development (e.g., when the repo is cloned).
+    """
+    # Check if bam2prof is in the system PATH.
+    # path_bin = shutil.which("bam2prof")
+    # if path_bin:
+    #     return Path(path_bin)
+    
+    # Get the directory of the current script.
+    base_dir = Path(__file__).parent.resolve()
+    
+    # List possible relative locations.
+    possible_locations = [
+        base_dir / "bam2prof",        # In the same directory as the script
+        base_dir / "src" / "bam2prof"   # In the src subdirectory (common for cloned repos)
+    ]
+    
+    for location in possible_locations:
+        if location.exists():
+            return location
 
-    # Case 2: Development mode (binary inside `src/` directory)
-    dev_bin = Path(__file__).parent / "src" / "bam2prof"
-    if dev_bin.exists():
-        return dev_bin
-
-    # If neither exists, exit with an error
-    print("Error: bam2prof binary not found!", file=sys.stderr)
+    logging.error("bam2prof binary not found!")
     sys.exit(1)
 
-
-def run_bam2prof(args_list):
-    """Run the compiled `bam2prof` binary with the given arguments."""
+def run_bam2prof(args_list, hpc=None):
+    """
+    Run the compiled `bam2prof` binary with the given arguments.
+    If an HPC file is provided via the hpc parameter, write the command to that file
+    instead of executing it.
+    """
     bam2prof_path = find_bam2prof()
-
-    # Ensure the binary is executable
     bam2prof_path.chmod(0o755)
 
     command = [str(bam2prof_path)] + args_list
-    print(f"Executing command: {' '.join(command)}")
+    command_str = ' '.join(command)
+
+    if hpc is not None:
+        with open(hpc, 'a') as f:
+            f.write(command_str + '\n')
+        return
+
     result = subprocess.run(command, capture_output=True, text=True)
 
     if result.stdout.strip():
-        print(result.stdout)
+        logger.info(result.stdout)
     if result.stderr.strip():
-        print(result.stderr, file=sys.stderr)
+        logger.info(result.stderr, file=sys.stderr)
 
     return result
 
@@ -61,7 +101,7 @@ def main():
     parser.add_argument('-meta', action='store_true', help='One Profile per unique reference (default: %(default)s)')
     parser.add_argument('-classic', action='store_true', help='One Profile per bam file (default: %(default)s)')
     parser.add_argument('-precision', type=float, default=0, help='Set minimum decimal precision for substitution frequency computation (default: %(default)s [= all alignments used]). Increase speed by setting to either (from faster to slower): 0.001, 0.0001, 0.00001, ... ) ')
-    parser.add_argument('-minAligned', type=int, default=10000000, help='Number of aligned sequences after which substitution patterns are checked if frequencies converge (default: %(default)s)')
+    parser.add_argument('-minAligned', type=float, default=10000000, help='Number of aligned sequences after which substitution patterns are checked if frequencies converge (default: %(default)s)')
     parser.add_argument('-ref-id', help='Specify reference ID')
     parser.add_argument('-single', action='store_true', help='Single strand library (default: %(default)s)')
     parser.add_argument('-double', action='store_true', help='Double strand library (default: %(default)s)')
@@ -70,6 +110,7 @@ def main():
     parser.add_argument('-dp', action='store_true', help='Output in damage-patterns format (default: %(default)s)')
     parser.add_argument('-q', type=int, choices=[0, 1], default=1, help='Do not print why reads are skipped (default: %(default)s)')
     parser.add_argument('-threads', type=int, default=1, help='Number of threads. One file per thread (default: %(default)s)')
+    parser.add_argument('-hpc', help='Dry Run. Pipe execution commands to file')
 
     args = parser.parse_args()
 
@@ -112,55 +153,45 @@ def main():
     if args.q:  # Ensure that q is provided, even though it has a default
         base_args.extend(['-q', str(args.q)])  # Append '-q' and its value (0 or 1) as a string
 
-        
+    hpc_file = args.hpc
 
     if not args.bam_files:
-        print("Error: BAM file list is required.")
+        logger.error("Error: BAM file list is required.")
         return
     
-
-
     with open(args.bam_files) as f:
         bam_files = f.read().splitlines()
 
     # Sanity check: Output directory must be specified
     if not args.o:
-        print("Error: Output Directory must be specified with < -o >")
+        logger.error("Error: Output Directory must be specified with < -o >")
         return
-    
-
-    # # Create output directory if it doesn't exist
-    # if not os.path.exists(args.o):
-    #     try:
-    #         os.makedirs(args.o)
-    #         print(f"Created output directory: {args.o}")
-    #     except Exception as e:
-    #         print(f"Error creating output directory: {e}")
-    #         return
 
     # Check if output directory exists and is not empty
     if os.path.exists(args.o) and os.listdir(args.o):
-        print(f"Warning: Output directory '{args.o}' is not empty.")
+        logger.warning(f"Warning: Output directory '{args.o}' is not empty.")
 
     with ProcessPoolExecutor(max_workers=args.threads) as executor:
         if args.classic:
-            print("Classic Mode: Will produce one matrix per bam file.")
+            logger.info("Classic Mode: Will produce one matrix per bam file.")
             base_args.append('-classic')
         elif args.meta:
-            print("Metagenome Mode: Will produce a matrix per reference.")
+            logger.info("Metagenome Mode: Will produce a matrix per reference.")
             base_args.append('-meta')
         else:
-            print("Error: -meta or -classic needs to be specified")
+            logger.error("Error: -meta or -classic needs to be specified")
             return
     
-        futures = {executor.submit(run_bam2prof, base_args + [bam]): bam for bam in bam_files}
+        futures = {
+            executor.submit(run_bam2prof, base_args + [bam], hpc=hpc_file): bam
+            for bam in bam_files
+        }
         for future in as_completed(futures):
             bam_file = futures[future]
             try:
                 result = future.result()
-                #print(f"Processing: {bam_file}")
             except Exception as exc:
-                print(f"{bam_file} generated an exception: {exc}")
+                logger.error(f"{bam_file} generated an exception: {exc}")
 
 if __name__ == "__main__":
     main()

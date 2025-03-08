@@ -25,6 +25,11 @@ import datetime
 
 from PyPDF2 import PdfReader, PdfWriter
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # os.environ["OMP_NUM_THREADS"] = "8"
 # os.environ["MKL_NUM_THREADS"] = "8"
 # os.environ["OPENBLAS_NUM_THREADS"] = "8"
@@ -34,12 +39,12 @@ from PyPDF2 import PdfReader, PdfWriter
 # ### Helper Functions ###
 
 def print_package_versions():
-    print("Package Versions Used in This Project:")
-    print(f"numpy: {np.__version__}")
-    print(f"pandas: {pd.__version__}")
-    print('matplotlib: {}'.format(matplotlib.__version__))
-    print(f"scikit-learn: {PCA.__module__.split('.')[0]} (v{PCA.__module__.split('.')[2]})")
-    print(f"scipy: {euclidean.__module__.split('.')[0]} (v{euclidean.__module__.split('.')[2]})")
+    logger.info("Package Versions Used in This Project:")
+    logger.info(f"numpy: {np.__version__}")
+    logger.info(f"pandas: {pd.__version__}")
+    logger.info('matplotlib: {}'.format(matplotlib.__version__))
+    logger.info(f"scikit-learn: {PCA.__module__.split('.')[0]} (v{PCA.__module__.split('.')[2]})")
+    logger.info(f"scipy: {euclidean.__module__.split('.')[0]} (v{euclidean.__module__.split('.')[2]})")
 
 
 
@@ -572,7 +577,7 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
             png_filename = f'{plot_path}/cluster_{cluster + 1}_weighted_profiles.png'
             fig.savefig(png_filename, dpi=300)
             plt.close(fig)
-    print(f"Weighted profiles saved to {pdf_path}")
+    logger.info(f"Weighted profiles saved to {pdf_path}")
 
 
 
@@ -744,17 +749,17 @@ def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns,
         # Determine the number of mapped reads
         nMapped = int(basename.split('_n')[-1])
         # Add the concatenated row based on conditions
-        if nMapped < minmap and validate_concatenated_row(concatenated_row):
-            combined_matrix.append(concatenated_row)
-            sample_names.append(basename)
-        elif nMapped >= minmap:
+        # if nMapped < minmap and validate_concatenated_row(concatenated_row) and nMapped > 100:
+        #     combined_matrix.append(concatenated_row)
+        #     sample_names.append(basename)
+        if nMapped >= minmap:
             combined_matrix.append(concatenated_row)
             sample_names.append(basename)
         else:
             sample_names_outsourced.append(basename)
     # Convert the combined matrix to a NumPy array for further processing
     combined_matrix = np.array(combined_matrix)
-    print(f"Combined matrix shape: {combined_matrix.shape}")
+    #print(f"Combined matrix shape: {combined_matrix.shape}")
     return combined_matrix, sample_names, sample_names_outsourced
 
 
@@ -770,7 +775,7 @@ def main():
     parser.add_argument('-k', type=int, default=4, metavar='Clusters',
                         help='Run clustering from 2 to k. (default: %(default)s)')
     parser.add_argument('-q', type=int, default=0, metavar='Less Plots (faster)',
-                        help='Do not plot probability per sample. TSV only. [off=0,on=1](default: %(default)s)')
+                        help='Do not plot probability per sample. Write to TSV only. [off=0,on=1](default: %(default)s)')
     parser.add_argument('-m', type=int, default=1000, metavar='Minimum Mapped Reads',
                         help='Require at least m reads to be mapped to a reference to be included in clustering (default: %(default)s)')
 
@@ -785,7 +790,7 @@ def main():
     os.makedirs(plot_path, exist_ok=True)
 
     now = datetime.datetime.now()
-    print("Preparing Matrix", now)
+    logger.info("Preparing Matrix", now)
     # Process all matrices and get results
     combined_matrix, sample_names, sample_names_outsourced = process_directory_combined(
         input_dir,
@@ -797,7 +802,7 @@ def main():
         column_3p=7
     )
     now = datetime.datetime.now()
-    print("Preparing Matrix Done", now)
+    logger.info("Preparing Matrix Done", now)
 
     original_matrix = combined_matrix
 
@@ -819,14 +824,14 @@ def main():
 
     # Iterate over k_iter for GMM clustering
     for k_iter in range(2, cluster_k+1):
-        print(f'Running clustering for k = {k_iter}...')
+        logger.info(f'Running clustering for k = {k_iter}...')
         pdf_list = []
         
         # Perform GMM clustering
         gmm_model, gmm_cluster_assignments, gmm_probabilities = perform_gmm(
             combined_matrix, n_components=k_iter)
         now = datetime.datetime.now()
-        print("Clustering Done", now)
+        logger.info("Clustering Done", now)
 
         # Make PCA Plot with gradient
         transformed_data, explained_variance, pca = perform_pca(combined_matrix, None)
@@ -835,7 +840,7 @@ def main():
         cluster_assignments = np.argmax(gmm_probabilities, axis=1)
         distances = compute_normalized_distances(transformed_data, cluster_assignments, sample_names, n_clu)
         now = datetime.datetime.now()
-        print("PCA Done", now)
+        logger.info("PCA Done", now)
         
         if less_plots == 0:
             plot_pca_gradient(
@@ -859,11 +864,11 @@ def main():
         pdf_list.append(pdf3)
 
         now = datetime.datetime.now()
-        print("Plotting Done", now)
+        logger.info("Plotting Done", now)
 
         save_probs_ids_tsv(gmm_probabilities, sample_names, distances, gmm_plot_path, k_iter, filename_prefix="cluster_report_k")
         now = datetime.datetime.now()
-        print("Export TSV Done", now)
+        logger.info("Export TSV Done", now)
     
         #pdf_list = [pdf1, pdf2, pdf3]
         
@@ -876,7 +881,7 @@ def main():
         scaled_pdf_path = os.path.join(plot_path, f"damage_report_k{k_iter}.pdf")
         scale_pdf(merged_pdf_path, scaled_pdf_path, target_width)
         
-        print(f"PDFs merged and scaled to {target_width/72:.2f} inches width. Final PDF: {scaled_pdf_path}")
+        logger.info(f"PDFs merged and scaled to {target_width/72:.2f} inches width. Final PDF: {scaled_pdf_path}")
 
 if __name__ == '__main__':
     main()
