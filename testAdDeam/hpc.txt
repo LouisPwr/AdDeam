@@ -1,6 +1,0 @@
-/net/mimer/mnt/tank/projects2/metagnm_asm/project2/AdDeamMain/AdDeam/src/bam2prof -minl 35 -length 5 -minAligned 10000000 -o hpcTest -q 1 -classic high1_sorted_md.bam
-/net/mimer/mnt/tank/projects2/metagnm_asm/project2/AdDeamMain/AdDeam/src/bam2prof -minl 35 -length 5 -minAligned 10000000 -o hpcTest -q 1 -classic high2_sorted_md.bam
-/net/mimer/mnt/tank/projects2/metagnm_asm/project2/AdDeamMain/AdDeam/src/bam2prof -minl 35 -length 5 -minAligned 10000000 -o hpcTest -q 1 -classic low1_sorted_md.bam
-/net/mimer/mnt/tank/projects2/metagnm_asm/project2/AdDeamMain/AdDeam/src/bam2prof -minl 35 -length 5 -minAligned 10000000 -o hpcTest -q 1 -classic low2_sorted_md.bam
-/net/mimer/mnt/tank/projects2/metagnm_asm/project2/AdDeamMain/AdDeam/src/bam2prof -minl 35 -length 5 -minAligned 10000000 -o hpcTest -q 1 -classic mid1_sorted_md.bam
-/net/mimer/mnt/tank/projects2/metagnm_asm/project2/AdDeamMain/AdDeam/src/bam2prof -minl 35 -length 5 -minAligned 10000000 -o hpcTest -q 1 -classic mid2_sorted_md.bam
