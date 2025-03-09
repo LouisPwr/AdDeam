@@ -45,6 +45,13 @@ def print_package_versions():
     logger.info('matplotlib: {}'.format(matplotlib.__version__))
     logger.info(f"scikit-learn: {PCA.__module__.split('.')[0]} (v{PCA.__module__.split('.')[2]})")
     logger.info(f"scipy: {euclidean.__module__.split('.')[0]} (v{euclidean.__module__.split('.')[2]})")
+# def print_package_versions():
+#     print("Package Versions Used in This Project:")
+#     print(f"numpy: {np.__version__}")
+#     print(f"pandas: {pd.__version__}")
+#     print('matplotlib: {}'.format(matplotlib.__version__))
+#     print(f"scikit-learn: {PCA.__module__.split('.')[0]} (v{PCA.__module__.split('.')[2]})")
+#     print(f"scipy: {euclidean.__module__.split('.')[0]} (v{euclidean.__module__.split('.')[2]})")
 
 
 
@@ -790,7 +797,7 @@ def main():
     os.makedirs(plot_path, exist_ok=True)
 
     now = datetime.datetime.now()
-    logger.info("Preparing Matrix", now)
+    logger.info("Preparing Matrix: %s", now)
     # Process all matrices and get results
     combined_matrix, sample_names, sample_names_outsourced = process_directory_combined(
         input_dir,
@@ -802,7 +809,7 @@ def main():
         column_3p=7
     )
     now = datetime.datetime.now()
-    logger.info("Preparing Matrix Done", now)
+    logger.info("Preparing Matrix Done %s", now)
 
     original_matrix = combined_matrix
 
@@ -824,6 +831,11 @@ def main():
 
     # Iterate over k_iter for GMM clustering
     for k_iter in range(2, cluster_k+1):
+
+        data_rows, data_cols = combined_matrix.shape
+        if k_iter > data_rows:
+            logger.info(f'n_samples ({data_rows}) < k ({k_iter}). Skipping...')
+            continue
         logger.info(f'Running clustering for k = {k_iter}...')
         pdf_list = []
         
@@ -831,7 +843,7 @@ def main():
         gmm_model, gmm_cluster_assignments, gmm_probabilities = perform_gmm(
             combined_matrix, n_components=k_iter)
         now = datetime.datetime.now()
-        logger.info("Clustering Done", now)
+        logger.info("Clustering Done %s", now)
 
         # Make PCA Plot with gradient
         transformed_data, explained_variance, pca = perform_pca(combined_matrix, None)
@@ -840,7 +852,7 @@ def main():
         cluster_assignments = np.argmax(gmm_probabilities, axis=1)
         distances = compute_normalized_distances(transformed_data, cluster_assignments, sample_names, n_clu)
         now = datetime.datetime.now()
-        logger.info("PCA Done", now)
+        logger.info("PCA Done %s", now)
         
         if less_plots == 0:
             plot_pca_gradient(
@@ -864,11 +876,11 @@ def main():
         pdf_list.append(pdf3)
 
         now = datetime.datetime.now()
-        logger.info("Plotting Done", now)
+        logger.info("Plotting Done %s", now)
 
         save_probs_ids_tsv(gmm_probabilities, sample_names, distances, gmm_plot_path, k_iter, filename_prefix="cluster_report_k")
         now = datetime.datetime.now()
-        logger.info("Export TSV Done", now)
+        logger.info("Export TSV Done %s", now)
     
         #pdf_list = [pdf1, pdf2, pdf3]
         
