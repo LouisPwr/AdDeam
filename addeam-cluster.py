@@ -2,11 +2,13 @@
 # coding: utf-8
 
 import os
+
+os.environ["OMP_NUM_THREADS"] = "1"
+
 import random
 import glob
 import argparse
 #from concurrent.futures import ProcessPoolExecutor
-
 
 import numpy as np
 import pandas as pd
