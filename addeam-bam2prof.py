@@ -82,7 +82,7 @@ def run_bam2prof(args_list, hpc=None):
     if result.stdout.strip():
         logger.info(result.stdout)
     if result.stderr.strip():
-        logger.info(result.stderr, file=sys.stderr)
+        logger.error(result.stderr)
 
     return result
 
