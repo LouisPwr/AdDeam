@@ -51,7 +51,7 @@ int main (int argc, char *argv[]) {
 
 	//#define DEBUG
 
-    string usage=string(""+string(argv[0])+" <options>  [in BAM file]"+
+    string usage=string(""+string(argv[0])+" <options> <mode> [in BAM file]"+
 			"\nThis program reads a BAM file and produces a deamination profile for the\n"+
 			"5' and 3' ends\n"+
 
@@ -282,6 +282,11 @@ int main (int argc, char *argv[]) {
 
 	if ( classicMode && metaMode ){
 		std::cerr << "Error: cannot specify both -classic and -meta )" << std::endl;
+		return 1;
+	}
+
+	if ( !classicMode && !metaMode ){
+		std::cerr << "Error: need to specify mode: -classic or -meta )" << std::endl;
 		return 1;
 	}
 

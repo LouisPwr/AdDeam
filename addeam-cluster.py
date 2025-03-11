@@ -41,12 +41,11 @@ logger = logging.getLogger(__name__)
 # ### Helper Functions ###
 
 def print_package_versions():
-    logger.info("Package Versions Used in This Project:")
     logger.info(f"numpy: {np.__version__}")
     logger.info(f"pandas: {pd.__version__}")
     logger.info('matplotlib: {}'.format(matplotlib.__version__))
-    logger.info(f"scikit-learn: {PCA.__module__.split('.')[0]} (v{PCA.__module__.split('.')[2]})")
-    logger.info(f"scipy: {euclidean.__module__.split('.')[0]} (v{euclidean.__module__.split('.')[2]})")
+    logger.info(f"scipy: {scipy.__version__}")
+    #logger.info(f"scipy: {euclidean.__module__.split('.')[0]} (v{euclidean.__module__.split('.')[2]})")
 # def print_package_versions():
 #     print("Package Versions Used in This Project:")
 #     print(f"numpy: {np.__version__}")
