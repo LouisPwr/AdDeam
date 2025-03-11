@@ -32,29 +32,14 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# os.environ["OMP_NUM_THREADS"] = "8"
-# os.environ["MKL_NUM_THREADS"] = "8"
-# os.environ["OPENBLAS_NUM_THREADS"] = "8"
-# os.environ["NUMEXPR_NUM_THREADS"] = "8"
-# os.environ["VECLIB_MAXIMUM_THREADS"] = "8"
-
-# ### Helper Functions ###
+### Helper Functions ###
 
 def print_package_versions():
     logger.info(f"numpy: {np.__version__}")
     logger.info(f"pandas: {pd.__version__}")
     logger.info('matplotlib: {}'.format(matplotlib.__version__))
-    logger.info(f"scipy: {scipy.__version__}")
+    # logger.info(f"scipy: {scipy.__version__}")
     #logger.info(f"scipy: {euclidean.__module__.split('.')[0]} (v{euclidean.__module__.split('.')[2]})")
-# def print_package_versions():
-#     print("Package Versions Used in This Project:")
-#     print(f"numpy: {np.__version__}")
-#     print(f"pandas: {pd.__version__}")
-#     print('matplotlib: {}'.format(matplotlib.__version__))
-#     print(f"scikit-learn: {PCA.__module__.split('.')[0]} (v{PCA.__module__.split('.')[2]})")
-#     print(f"scipy: {euclidean.__module__.split('.')[0]} (v{euclidean.__module__.split('.')[2]})")
-
-
 
 def check_for_nan(matrix):
     """Check if the matrix contains any NaN values."""
@@ -79,14 +64,6 @@ def create_plot_directories(base_path, method, k_iter):
     method_plot_path = os.path.join(base_path, method, f'k{k_iter}')
     os.makedirs(method_plot_path, exist_ok=True)
     return method_plot_path
-
-# def extract_number_after_n(name):
-#     """
-#     Extracts the number after 'n' in a given sample name.
-#     Example: 'PYK005.A0101_sorted_md_NC_016610.1_n69551' -> 69551
-#     """
-#     return int(name.split('_n')[-1])  # Extract the number after '_n'
-
 
 def save_probs_ids_tsv(probabilities, sample_names, distances, path, n_components, filename_prefix="cluster_report_k"):
     """
@@ -175,7 +152,6 @@ def create_truncated_colormap(base_color, n=100):
     new_cmap = LinearSegmentedColormap.from_list('custom_cmap', colors, N=n)
     return new_cmap
 
-
 def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', explained_variance=None, pdf_filename="pca_gradient_with_distances.pdf"):
     """
     Plot PCA results with color gradient based on cluster assignment, using transparency to indicate probabilities.
@@ -186,28 +162,6 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
     cluster_assignments = np.argmax(probabilities, axis=1)
     pc1 = transformed_data[:, 0]
     pc2 = transformed_data[:, 1]
-    # Compute cluster centers (centroids)
-    # cluster_centers = []
-    # for cluster in range(n_clusters):
-    #     cluster_points = transformed_data[cluster_assignments == cluster]
-    #     cluster_center = cluster_points.mean(axis=0)  # Calculate centroid
-    #     cluster_centers.append(cluster_center)
-    # Compute distances from each sample to its cluster center
-    # distances = []
-    # max_distances = [0] * n_clusters  # Keep track of max distance per cluster
-    # # Calculate distances and determine the max distance per cluster
-    # for i, cluster in enumerate(cluster_assignments):
-    #     center = cluster_centers[cluster]
-    #     distance = euclidean(transformed_data[i], center)
-    #     distances.append(distance)
-    #     if distance > max_distances[cluster]:
-    #         max_distances[cluster] = distance
-    # # Normalize distances by dividing each distance by the max distance in its cluster
-    # normalized_distances = []
-    # for i, cluster in enumerate(cluster_assignments):
-    #     normalized_distance = distances[i] / max_distances[cluster] if max_distances[cluster] != 0 else 0
-    #     normalized_distances.append(normalized_distance)
-    # normalized_distances = np.round(normalized_distances, 4)
     # Create a truncated colormap for each cluster based on its color
     cmap_dict = {
         cluster: create_truncated_colormap(colors[cluster])
@@ -288,9 +242,6 @@ def plot_pca_gradient(transformed_data, sample_names, probabilities, path='.', e
         png_filename = f'{path}/PCA_gradient_{cluster + 1}.png'
         fig.savefig(png_filename, dpi=300)
         plt.close(fig)
-    
-    #distance_report = {name: norm_dist for name, norm_dist in zip(sample_names, normalized_distances)}
-    #return distance_report  # Optionally return the normalized distances for further analysis
 
 def compute_normalized_distances(transformed_data, cluster_assignments, sample_names, n_clusters):
     """
@@ -322,8 +273,6 @@ def compute_normalized_distances(transformed_data, cluster_assignments, sample_n
     distance_report = {name: norm_dist for name, norm_dist in zip(sample_names, normalized_distances)}
 
     return distance_report
-
-
 
 def perform_gmm(combined_matrix, n_components=2, max_iter=10000, n_init=2000, tol=1e-3, random_state=1, covariance_type='spherical', reg_covar=1e-3):
     """
@@ -390,25 +339,24 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
     sorted_indices = np.lexsort((-np.max(probabilities, axis=1), assigned_clusters))
     probabilities_sorted = probabilities[sorted_indices]
     sample_names_sorted = np.array(sample_names)[sorted_indices]
-    #sample_mapping_nums = np.array([extract_number_after_n(name) for name in sample_names_sorted])
-    #assigned_clusters_sorted = assigned_clusters[sorted_indices]
     sample_ids = np.arange(1, len(sample_names_sorted) + 1)
     sample_ids_str = [f'{id:0{len(str(len(sample_names)))}d}' for id in sample_ids]
     # Initialize PdfPages to save plots into a multi-page PDF
     with PdfPages(f'{path}/{pdf_filename}') as pdf:
         # Number of full plots needed (each with up to three columns)
         num_plots = (len(sample_names_sorted) + max_samples_per_plot - 1) // max_samples_per_plot
-        # print("len(sample_names_sorted)", len(sample_names_sorted))
-        # print("max_samples_per_plot", max_samples_per_plot)
-        # print("num_plots", num_plots)
+        # Create numeric sample IDs and corresponding padded labels
+        sample_ids_numeric = np.arange(1, len(sample_names_sorted) + 1)
+        max_digits = len(str(sample_ids_numeric[-1]))
+        sample_ids_labels = [str(s).zfill(max_digits) for s in sample_ids_numeric]
+
+        # Then, in the plotting loop, instead of using the padded strings as y-values,
+        # extract the corresponding numeric values and their padded labels.
         for plot_idx in range(num_plots):
             start_idx = plot_idx * max_samples_per_plot
             end_idx = min(start_idx + max_samples_per_plot, len(sample_names_sorted))
             samples_on_plot = end_idx - start_idx
-            # print("samples_on_plot",samples_on_plot)
-            # print("start_idx",start_idx)
-            # print("end_idx",end_idx)
-            #columns_on_plot = min(len(sample_names_sorted)//max_samples_per_column + 1, columns_per_plot)
+
             scaleSmpCol = 1
             if samples_on_plot/max_samples_per_plot< 0.25:
                 figH = 4
@@ -433,43 +381,50 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             #figH = 8
             if plot_idx == num_plots-1:
                 max_samples_per_column = samples_on_plot//columns_on_plot + samples_on_plot%columns_on_plot     
-                # print("max_samples_per_column", max_samples_per_column)
-                # print("columns_on_plot", columns_on_plot)
             figsizeFactor = 1
-            # if samples_on_plot // max_samples_per_plot == 0:
-            #     figsizeFactor = min(samples_on_plot/max_samples_per_column * figsizeFactor + 0.2, 1)
             # Create a new figure for each set of three columns (DINA4 format: 8.27 x 11.69 inches)
             fig, axs = plt.subplots(1, columns_on_plot, figsize=(figW, figsizeFactor*figH))  # DINA4 width split across 3 columns
             if columns_on_plot == 1:
                 axs = [axs]
             bar_height = 0.65  # Height of the horizontal bars
+            
+            # Get numeric y-values and labels for this plot (reversed for top-to-bottom plotting)
+            sample_ids_for_plot_numeric = sample_ids_numeric[start_idx:end_idx][::-1]
+            sample_ids_labels_for_plot = sample_ids_labels[start_idx:end_idx][::-1]
+            
+            probabilities_on_plot = probabilities_sorted[start_idx:end_idx][::-1]  # Reverse probabilities
+            
             for col in range(columns_on_plot):
                 col_start = col * max_samples_per_column
-                col_end = min(col_start + max_samples_per_column, len(sample_ids_on_plot))
-                # print("col_start", col_start)
-                # print("col_end", col_end)
-                # print("max_samples_per_column", max_samples_per_column)
-                # print("len(sample_ids_on_plot)", len(sample_ids_on_plot))
+                col_end = min(col_start + max_samples_per_column, len(sample_ids_for_plot_numeric))
                 bottom = np.zeros(col_end - col_start)
-                # Reverse the sample IDs and the corresponding probabilities for plotting top to bottom
-                sample_ids_for_plot = sample_ids_on_plot[col_start:col_end][::-1]
-                probabilities_for_plot = probabilities_on_plot[col_start:col_end][::-1]  # Reverse probabilities
+                
+                # Slice the numeric values and labels for this column
+                y_vals = sample_ids_for_plot_numeric[col_start:col_end]
+                y_labels = sample_ids_labels_for_plot[col_start:col_end]
+                probs = probabilities_on_plot[col_start:col_end]
+                
                 for component in range(n_components):
                     axs[col].barh(
-                        sample_ids_for_plot,  # Reversed sample IDs to plot top-to-bottom
-                        probabilities_for_plot[:, component],  # Reversed probabilities for the current component
+                        y_vals,  # numeric y-values for plotting
+                        probs[:, component],  # probabilities for current component
                         bar_height,
                         label=f'Cluster {component + 1}' if col == 0 else "",
                         left=bottom
                     )
-                    bottom += probabilities_for_plot[:, component]
+                    bottom += probs[:, component]
+                
                 axs[col].set_xlabel('Probability of Cluster Membership')
                 axs[col].set_ylabel('Samples (by ID)')
-                axs[col].tick_params(axis='y', labelsize=7)  # Adjust the '6' to your preferred font size
-                axs[col].set_ylim(-0.2, len(sample_ids_for_plot))  # Ensures no excess space at the top or bottom
-                axs[col].set_xlim(0, 1)  # Ensures no excess space at the top or bottom
+                axs[col].tick_params(axis='y', labelsize=7)
+                # Set the y-ticks with numeric positions...
+                axs[col].set_yticks(y_vals)
+                # ...and then set the zero-padded labels
+                axs[col].set_yticklabels(y_labels)
+                axs[col].set_ylim(-0.2, len(y_vals))
+                axs[col].set_xlim(0, 1)
+
             # Add a single title across the figure
-            #fig.suptitle('Membership Probabilities per Sample', fontsize=10)
             handles, labels = axs[0].get_legend_handles_labels()
             fig.legend(handles, labels, loc='upper center', ncol=n_components, bbox_to_anchor=(0.5, 0.99))
             plt.tight_layout(rect=[0, 0, 1, 0.97])  # Reduced rect to leave less space at the top
@@ -495,48 +450,6 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
     - n_components: The number of clusters.
     - pdf_filename: The name of the output PDF file.
     """
-    # pdf_path = f'{plot_path}/{pdf_filename}'
-    # with PdfPages(pdf_path) as pdf:
-    #     for cluster in range(n_components):
-    #         # Initialize combined data dictionary with arrays of zeros
-    #         weighted_combined_data = {i: np.zeros(10) for i in range(10)}
-    #         print(weighted_combined_data)
-    #         total_prob = 0
-    #         for i, sample_name in enumerate(sample_names):
-    #             prob = probabilities[i, cluster]
-    #             if prob > 0:
-    #                 # Extract the combined data for the current sample directly from the combined_matrix
-    #                 combined_data = combined_matrix[i]
-    #                 # Split the combined data into 5p and 3p components
-    #                 fivep_data = combined_data[:5]  # First 5 positions for the 5p data
-    #                 threep_data = combined_data[5:]  # Last 5 positions for the 3p data
-    #                 # Reverse the 3p data if needed
-    #                 if not reverse:
-    #                     threep_data = threep_data[::-1]
-    #                 # Concatenate the 5p and (potentially reversed) 3p data
-    #                 combined_data = np.concatenate([fivep_data, threep_data])
-    #                 # Weight and accumulate the combined data using arrays
-    #                 for pos in range(10):
-    #                     weighted_combined_data[pos] += combined_data[pos] * prob
-    #                 total_prob += prob
-            
-    #         # Normalize by total probability
-    #         for pos in range(10):
-    #             if total_prob > 0:
-    #                 weighted_combined_data[pos] /= total_prob
-            
-    #         # Plotting the results
-    #         save_weighted_profiles_to_tsv(weighted_combined_data, plot_path, f'cluster_{cluster + 1}_weighted_profile')
-    #         fig, axs = plt.subplots(1, 2, figsize=(8, 3))
-    #         plot_prof_substitutions(axs[0], weighted_combined_data, substitution_type='C>T', color='red', positions_range=(0, 5), xlabel="Position from 5' end")
-    #         plot_prof_substitutions(axs[1], weighted_combined_data, substitution_type='G>A', color='blue', positions_range=(5, 10), xlabel="Position from 3' end")
-    #         plt.suptitle(f'Representative Substitution Frequencies for Cluster {cluster + 1} ({method})')
-    #         plt.tight_layout()
-    #         pdf.savefig(fig)
-    #         png_filename = f'{plot_path}/cluster_{cluster + 1}_weighted_profiles.png'
-    #         fig.savefig(png_filename, dpi=300)
-    #         plt.close(fig)
-    # print(f"Weighted profiles saved to {pdf_path}")
     pdf_path = f'{plot_path}/{pdf_filename}'
 
     global_max_damage = 0
@@ -587,8 +500,6 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
             plt.close(fig)
     logger.info(f"Weighted profiles saved to {pdf_path}")
 
-
-
 def plot_prof_substitutions(ax, all_combined_data, max_dam, substitution_type='C>T', color='red', positions_range=(0, 5), xlabel="Position from 5' end"):
     """
     Create a scatter plot with a continuous line for substitutions.
@@ -607,7 +518,6 @@ def plot_prof_substitutions(ax, all_combined_data, max_dam, substitution_type='C
     ax.set_xticks(positions)
     ax.set_xticklabels(x_labels)
     ax.grid(axis='y', linestyle='--')
-
 
 def save_weighted_profiles_to_tsv(weighted_combined_data, output_dir, prefix="none"):
     """
@@ -636,16 +546,12 @@ def save_weighted_profiles_to_tsv(weighted_combined_data, output_dir, prefix="no
         
     for i, pos in enumerate(reversed(range(5, 10))):  # 3' positions: 5, 6, 7, 8, 9
         data_3p.at[i, "G>A"] = round(weighted_combined_data[pos], 3)  # Populate data_3p with 3' data
-
     
     # Save to TSV files
     tsv_5p_path = f"{output_dir}/{prefix}_5p.prof"
     tsv_3p_path = f"{output_dir}/{prefix}_3p.prof"
     data_5p.to_csv(tsv_5p_path, sep="\t", index=False)
     data_3p.to_csv(tsv_3p_path, sep="\t", index=False)
-    
-    # print(f"Saved 5' profile to: {tsv_5p_path}")
-    # print(f"Saved 3' profile to: {tsv_3p_path}")
 
 
 def validate_concatenated_row(concatenated_row):
@@ -670,54 +576,6 @@ def validate_concatenated_row(concatenated_row):
         concatenated_row[-2] > concatenated_row[-5]):
         return True
     return False
-
-
-# def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns, column_5p=6, column_3p=7, balance=[0,0,0]):
-#     """
-#     Process all matrices in the directory and build a combined matrix for analysis.
-#     """
-#     matrix_filesraw = glob.glob(os.path.join(directory, '*.prof'))
-#     matrix_files = matrix_filesraw
-#     basenames = set(os.path.basename(f).rsplit('_', 1)[0] for f in matrix_files)
-#     no_basenames = [basename for basename in basenames if "dnone" in basename]
-#     no_remove = int(len(no_basenames) * balance[0])
-#     no_base_rm = random.sample(no_basenames, no_remove)
-#     mid_basenames = [basename for basename in basenames if "dmid" in basename]
-#     mid_remove = int(len(mid_basenames) * balance[1])
-#     mid_base_rm = random.sample(mid_basenames, mid_remove)
-#     high_basenames = [basename for basename in basenames if "dhigh" in basename]
-#     high_remove = int(len(high_basenames) * balance[2])
-#     high_base_rm = random.sample(high_basenames, high_remove)
-#     basenames = basenames - set(high_base_rm) - set(mid_base_rm) - set(no_base_rm)
-#     combined_matrix = []
-#     sample_names = []
-#     sample_names_outsourced = []
-#     for basename in basenames:
-#         files = [f for f in matrix_files if basename in f]
-#         try:
-#             matrix_3p = load_matrix(next(f for f in files if '3p' in f))
-#             matrix_5p = load_matrix(next(f for f in files if '5p' in f))
-#         except StopIteration:
-#             continue
-#         if check_for_nan(matrix_3p) or check_for_nan(matrix_5p):
-#             continue
-#         column_5p_data = matrix_5p.iloc[:, column_5p-1].values
-#         column_3p_data = matrix_3p.iloc[:, column_3p-1].values
-#         concatenated_row = np.concatenate([column_5p_data, column_3p_data[::-1]])
-#         nMapped = int(basename.split('_n')[-1])
-#         ## Here we check if the profiles need to be validated; currently set to 1000; should we make this a parameter?
-#         if (nMapped < 1000 ):  
-#             if (validate_concatenated_row(concatenated_row)):
-#                 combined_matrix.append(concatenated_row)
-#                 sample_names.append(basename)
-#             else:
-#                 sample_names_outsourced.append(basename)
-#         else:
-#             combined_matrix.append(concatenated_row)
-#             sample_names.append(basename)
-#     combined_matrix = np.array(combined_matrix)
-#     print(f"Combined matrix shape: {combined_matrix.shape}")
-#     return combined_matrix, sample_names, sample_names_outsourced
 
 def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns, minmap = 1000, column_5p=6, column_3p=7, balance=[0, 0, 0]):
     """

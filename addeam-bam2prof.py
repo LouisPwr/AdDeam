@@ -79,10 +79,10 @@ def run_bam2prof(args_list, hpc=None):
 
     result = subprocess.run(command, capture_output=True, text=True)
 
-    if result.stdout.strip():
-        logger.info(result.stdout)
-    if result.stderr.strip():
-        logger.error(result.stderr)
+    # if result.stdout.strip():
+    #     logger.info(result.stdout)
+    # if result.stderr.strip():
+    #     logger.error(result.stderr)
 
     return result
 
