@@ -40,7 +40,7 @@ AdDeam offers a variety of key features that make it a robust solution for damag
 
 You can install AdDeam using either a Conda package or from source. Follow the instructions below based on your preferred method.
 
-### 1. Install with Conda (via Bioconda)
+### 1. Install with Conda (via Bioconda) [DOESNT WORK YET]
 To install AdDeam using Conda, simply run:
 
     conda install -c bioconda addeam
@@ -61,17 +61,17 @@ bam2prof is a C++ tool used by AdDeam that is fast and robust for generating dam
 ## To run AdDeam, follow these steps:
 
 1. Generate Damage Profiles
-Use the `bam2prof.py` wrapper to generate damage profiles from a list of BAM files. Specify the output directory for the profiles:
+Use the `addeam-bam2prof.py` wrapper to generate damage profiles from a list of BAM files. Specify the output directory for the profiles:
 
-       python bam2prof.py -o profilesDir listOfBamFiles.txt
+       python addeam-bam2prof.py -o profilesDir listOfBamFiles.txt
 
 2. Cluster and Plot
-Once the profiles are generated, cluster and visualize them using `cluster.py`. Specify the input directory for the profiles and an output directory for the plots:
+Once the profiles are generated, cluster and visualize them using `addeam-cluster.py`. Specify the input directory for the profiles and an output directory for the plots:
 
-       python cluster.py -i profilesDir -o plotsDir
+       python addeam-cluster.py -i profilesDir -o plotsDir
 
 ## Test Data:
 The directory testAdDeam in this repository contains 6 BAM files and a text file. After downloading, the text file needs to be updated with the paths to all BAM files.
-The tool can be tested with these BAM files in both meta and classic mode - just specify the desired mode when running `bam2prof.py`
+The tool can be tested with these BAM files in both meta and classic mode - just specify the desired mode when running `addeam-bam2prof.py`
 
 
