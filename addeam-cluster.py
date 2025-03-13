@@ -593,9 +593,9 @@ def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns,
         basename = os.path.basename(file_path).rsplit('_', 1)[0]
         if basename not in basenames:
             continue
-        if '3p' in file_path:
+        if file_path.endswith("3p.prof"):
             matrix_3p_dict[basename] = load_matrix(file_path)
-        elif '5p' in file_path:
+        elif file_path.endswith("5p.prof"):
             matrix_5p_dict[basename] = load_matrix(file_path)
     combined_matrix = []
     sample_names = []
@@ -608,6 +608,7 @@ def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns,
         # Check if matrices are loaded correctly and valid
         if matrix_3p is None or matrix_5p is None or check_for_nan(matrix_3p) or check_for_nan(matrix_5p):
             continue
+
         # Extract the relevant columns and concatenate them
         column_5p_data = matrix_5p.iloc[:, column_5p - 1].values
         column_3p_data = matrix_3p.iloc[:, column_3p - 1].values
