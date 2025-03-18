@@ -2,3 +2,7 @@
 	path = bam2prof
 	url = https://github.com/grenaud/bam2prof
 	branch = vAddeam
+[submodule "submodules"]
+	path = submodules
+	url = https://github.com/grenaud/bam2prof
+	branch = vAddeam
