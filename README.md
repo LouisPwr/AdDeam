@@ -106,6 +106,8 @@ Running `addeam-cluster.py` on a directory of `*.prof` files generates the follo
 
 The automatically generated report for the test data (meta mode) is shown for k=3:
 The PDF file contains the PCA plot, the probability assignment to each sample/reference/contig and the representative damage profiles per cluster.
+!!! The assignment of samples to clusters can be determined from the `cluster_report_k3.tsv` file !!!
+
 [damage_report_k3.pdf](https://github.com/user-attachments/files/19324065/damage_report_k3.pdf)
 
 The PCA and representative damage profiles, to be found in the PDF as well, look like:
