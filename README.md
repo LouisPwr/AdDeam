@@ -72,8 +72,24 @@ Once the profiles are generated, cluster and visualize them using `addeam-cluste
 
        python addeam-cluster.py -i profilesDir -o plotsDir
 
-## Test Data:
+## Output & Interpretation:
+
+![Figure_2 Output Simulations](https://github.com/user-attachments/assets/2eee9e40-e067-4f43-a7bd-aa16d94632e4)
+
+explain....
+
+## Quick Start:
 The directory testAdDeam in this repository contains 6 BAM files and a text file. After downloading, the text file needs to be updated with the paths to all BAM files.
 The tool can be tested with these BAM files in both meta and classic mode - just specify the desired mode when running `addeam-bam2prof.py`
 
+Running META mode:
 
+`addeam-bam2prof.py -meta -o path/to/profiles/meta/outdir path/to/test.txt`
+
+Running CLASSIC mode:
+
+`addeam-bam2prof.py -classic -o path/to/profiles/classic/outdir path/to/test.txt`
+
+Clustering:
+
+`addeam-bam2prof.py -i path/to/profiles/meta/outdir -o path/to/clusters/meta/outdir`
