@@ -112,7 +112,7 @@ Running `addeam-cluster.py` on a directory of `*.prof` files generates the follo
 
 You can test the tool using the provided BAM files in this repository.
 
-- Navigate to the `testAdDeam` directory, which contains six BAM files for testing both **CLASSIC** and **META** modes.
+- Navigate to the `testAdDeam` directory, which contains six BAM files for testing both the **CLASSIC** and **META** mode.
 - Clone this repository or, if AdDeam is already installed, download the `testAdDeam` directory.
 - Retrieve the full paths of the BAM files (e.g., using `readlink -f`) and add them to the `test.txt` file.
 - Use the `test.txt` file as input for the `addeam-bam2prof.py` command.
