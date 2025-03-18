@@ -104,7 +104,7 @@ Running `addeam-cluster.py` on a directory of `*.prof` files generates the follo
     - Example: `addeamOutput/GMM/k3/cluster_report_k3.tsv` lists reference names with their probability assignments to clusters `1`, `2`, and `3`.
   - Individual GMM plots for modularity.
 
-The automatically generated report for the test data (meta mode) is shown for k=3:
+The automatically generated report for the test data (**META** mode) is shown for **k=3**:
 The PDF file contains the PCA plot, the probability assignment to each sample/reference/contig and the representative damage profiles per cluster.
 !!! The assignment of samples to clusters can be determined from the `cluster_report_k3.tsv` file !!!
 
