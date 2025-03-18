@@ -23,6 +23,8 @@ To ensure that the BAM file includes mismatch annotations relative to the refere
 
     samtools calmd -b in_file.bam reference.fasta > out_file.bam
 
+Please note that calmd also takes file descriptors and can be piped easily to/from "bwa", "bowtie", "samtools view" or "samtools sort".
+
 ## Key Features
 AdDeam offers a variety of key features that make it a robust solution for damage profile generation and analysis:
 
