@@ -78,7 +78,7 @@ Once the profiles are generated, cluster and visualize them using `addeam-cluste
 
 ![Figure_2 Output Simulations](https://github.com/user-attachments/assets/2eee9e40-e067-4f43-a7bd-aa16d94632e4)
 
-### Damage Profiles Directory
+### Damage Profiles Directory with `addeam-bam2prof.py`
 The `addeam-bam2prof.py` command creates a directory containing multiple `*.prof` files.
 
 ### Clustering Results with `addeam-cluster.py`
