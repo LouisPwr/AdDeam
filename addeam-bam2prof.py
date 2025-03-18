@@ -50,7 +50,7 @@ def find_bam2prof():
     # List possible relative locations.
     possible_locations = [
         base_dir / "bam2prof",        # In the same directory as the script
-        base_dir / "src" / "bam2prof"   # In the src subdirectory (common for cloned repos)
+        base_dir / "submodules" / "src" / "bam2prof"   # In the src subdirectory (common for cloned repos)
     ]
     
     for location in possible_locations:
