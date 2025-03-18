@@ -101,7 +101,7 @@ Running `addeam-cluster.py` on a directory of `*.prof` files generates the follo
 - Each subdirectory includes:
   - Representative damage profiles (`*.prof` files).
   - A TSV file containing probability assignments for each reference to different clusters.
-    - Example: `addeamOutput/GMM/k3/cluster_report_k3.tsv` lists reference names with their probability assignments to clusters `1`, `2`, and `3`.
+    Example: `addeamOutput/GMM/k3/cluster_report_k3.tsv` lists reference names with their probability assignments to clusters `1`, `2`, and `3`.
   - Individual GMM plots for modularity.
 
 The automatically generated report for the test data (**META** mode) is shown for **k=3**:
