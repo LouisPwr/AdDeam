@@ -5,7 +5,7 @@ AdDeam is a new tool designed to take a list of BAM files as input and generate 
 ## Modes of Operation
 AdDeam comes with two distinct modes:
 
-- **Classic Mode**: Generates a single damage profile for the entire BAM file. This is useful when the BAM file represents a single sample/extraction/individualg.
+- **Classic Mode**: Generates a single damage profile for the entire BAM file. This is useful when the BAM file represents a single sample/extraction/individual.
   
 - **Meta Mode**: Generates individual damage profiles for each reference (contig, scaffold or chromosome) in the BAM file. This mode is especially beneficial for metagenomic datasets aligned against large reference databases or when you align the ancient DNA fragments back to the assembly to identify which contigs/scaffolds are likely to be contamination.
 
