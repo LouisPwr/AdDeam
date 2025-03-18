@@ -105,7 +105,16 @@ Running `addeam-cluster.py` on a directory of `*.prof` files generates the follo
   - Individual GMM plots for modularity.
 
 The automatically generated report for the test data (meta mode) is shown for k=3:
+The PDF file contains the PCA plot, the probability assignment to each sample/reference/contig and the representative damage profiles per cluster.
 [damage_report_k3.pdf](https://github.com/user-attachments/files/19324065/damage_report_k3.pdf)
+
+The PCA and representative damage profiles, to be found in the PDF as well, look like:
+![PCA_gradient_3](https://github.com/user-attachments/assets/f7e2281d-9bfe-4ecc-91bd-c57706e18c8b)
+![cluster_3_weighted_profiles](https://github.com/user-attachments/assets/b87361e7-54c4-4e22-83f1-780574bdbe8a)
+![cluster_2_weighted_profiles](https://github.com/user-attachments/assets/bc2becea-9f0d-42a2-99d4-a195a94efb3f)
+![cluster_1_weighted_profiles](https://github.com/user-attachments/assets/cfb9f697-d0e3-43de-a5bb-e1b0375ea491)
+
+
 
 ## Quick Start
 
