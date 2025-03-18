@@ -76,7 +76,35 @@ Once the profiles are generated, cluster and visualize them using `addeam-cluste
 
 ![Figure_2 Output Simulations](https://github.com/user-attachments/assets/2eee9e40-e067-4f43-a7bd-aa16d94632e4)
 
-explain....
+### prof Files Directory
+The `addeam-bam2prof.py` command creates a directory containing multiple `*.prof` files.
+
+#### Clustering Results with `addeam-cluster.py`
+Running `addeam-cluster.py` on a directory of `*.prof` files generates the following output:
+
+##### 1. PDF Damage Reports
+- One report per number of clusters (`k`).
+- By default, reports are generated for `k = 2`, `k = 3`, and `k = 4`.
+
+##### 2. Excluded References File
+- A text file listing damage profile IDs that were excluded due to insufficient aligned reads.
+- These references were not included in the clustering process.
+
+##### 3. PCA and GMM Directories
+
+##### PCA Directory
+- Contains figures showing only the PCA component.
+- Useful for modular usage of plots.
+
+#### GMM Directory
+- Contains subdirectories for each `k` (e.g., `GMM/k2`, `GMM/k3`, etc.).
+- Each subdirectory includes:
+  - Representative damage profiles (`*.prof` files).
+  - A TSV file containing probability assignments for each reference to different clusters.
+    - Example: `addeamOutput/GMM/k3/cluster_report_k3.tsv` lists reference names with their probability assignments to clusters `1`, `2`, and `3`.
+  - Individual GMM plots for detailed visualization.
+
+
 
 ## Quick Start:
 The directory testAdDeam in this repository contains 6 BAM files and a text file. After downloading, the text file needs to be updated with the paths to all BAM files.
