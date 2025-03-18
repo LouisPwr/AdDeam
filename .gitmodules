@@ -1,0 +1,4 @@
+[submodule "bam2prof"]
+	path = bam2prof
+	url = https://github.com/grenaud/bam2prof
+	branch = vAddeam
