@@ -55,19 +55,24 @@ def find_bam2prof():
     
     for location in possible_locations:
         if location.exists():
+            logger.info('%s %s', "bam2prof located at:", location)
             return location
 
     logging.error("bam2prof binary not found!")
     sys.exit(1)
 
-def run_bam2prof(args_list, hpc=None):
+def run_bam2prof(args_list, hpc=None, b2p=None):
     """
     Run the compiled `bam2prof` binary with the given arguments.
     If an HPC file is provided via the hpc parameter, write the command to that file
     instead of executing it.
     """
-    bam2prof_path = find_bam2prof()
-    bam2prof_path.chmod(0o755)
+    if b2p is not None:
+        bam2prof_path = b2p
+    else:
+        bam2prof_path = find_bam2prof()
+
+    #bam2prof_path.chmod(0o755)
 
     command = [str(bam2prof_path)] + args_list
     command_str = ' '.join(command)
@@ -114,6 +119,7 @@ def main():
     parser.add_argument('-q', type=int, choices=[0, 1], default=1, help='Do not print why reads are skipped (default: %(default)s)')
     parser.add_argument('-threads', type=int, default=1, help='Number of threads. One file per thread (default: %(default)s)')
     parser.add_argument('-hpc', help='Dry Run. Pipe execution commands to file')
+    parser.add_argument('-bam2profpath', help='Provide absolute path to bam2prof binary and use it for execution')
 
     args = parser.parse_args()
 
@@ -157,6 +163,7 @@ def main():
         base_args.extend(['-q', str(args.q)])  # Append '-q' and its value (0 or 1) as a string
 
     hpc_file = args.hpc
+    bam2prof_path = args.bam2profpath
 
     if not args.bam_files:
         logger.error("Error: BAM file list is required.")
@@ -186,7 +193,7 @@ def main():
             return
     
         futures = {
-            executor.submit(run_bam2prof, base_args + [bam], hpc=hpc_file): bam
+            executor.submit(run_bam2prof, base_args + [bam], hpc=hpc_file, b2p = bam2prof_path): bam
             for bam in bam_files
         }
         for future in as_completed(futures):

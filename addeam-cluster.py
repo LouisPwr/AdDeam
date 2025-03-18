@@ -328,6 +328,7 @@ def extract_number_after_n(filename):
     except (ValueError, IndexError):
         return None  # Return None if the format is incorrect or conversion fails
 
+
 def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path, n_components=2, pdf_filename="cluster_report.pdf"):
     """
     Plot normalized horizontal bar plots for the probabilities of cluster assignments for each sample.
@@ -339,25 +340,21 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
     sorted_indices = np.lexsort((-np.max(probabilities, axis=1), assigned_clusters))
     probabilities_sorted = probabilities[sorted_indices]
     sample_names_sorted = np.array(sample_names)[sorted_indices]
+    #sample_mapping_nums = np.array([extract_number_after_n(name) for name in sample_names_sorted])
+    #assigned_clusters_sorted = assigned_clusters[sorted_indices]
     sample_ids = np.arange(1, len(sample_names_sorted) + 1)
     sample_ids_str = [f'{id:0{len(str(len(sample_names)))}d}' for id in sample_ids]
     # Initialize PdfPages to save plots into a multi-page PDF
     with PdfPages(f'{path}/{pdf_filename}') as pdf:
         # Number of full plots needed (each with up to three columns)
         num_plots = (len(sample_names_sorted) + max_samples_per_plot - 1) // max_samples_per_plot
-        # Create numeric sample IDs and corresponding padded labels
-        sample_ids_numeric = np.arange(1, len(sample_names_sorted) + 1)
-        max_digits = len(str(sample_ids_numeric[-1]))
-        sample_ids_labels = [str(s).zfill(max_digits) for s in sample_ids_numeric]
-
-        # Then, in the plotting loop, instead of using the padded strings as y-values,
-        # extract the corresponding numeric values and their padded labels.
         for plot_idx in range(num_plots):
             start_idx = plot_idx * max_samples_per_plot
             end_idx = min(start_idx + max_samples_per_plot, len(sample_names_sorted))
             samples_on_plot = end_idx - start_idx
-
+            #columns_on_plot = min(len(sample_names_sorted)//max_samples_per_column + 1, columns_per_plot)
             scaleSmpCol = 1
+            figH = 12
             if samples_on_plot/max_samples_per_plot< 0.25:
                 figH = 4
                 scaleSmpCol = 0.25
@@ -377,54 +374,78 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
                     cluster_probabilities[component].append(probabilities_on_plot[i, component])
             figW = 8.5
             #figW = 5.5
-            figH = 12
             #figH = 8
             if plot_idx == num_plots-1:
                 max_samples_per_column = samples_on_plot//columns_on_plot + samples_on_plot%columns_on_plot     
+                # print("max_samples_per_column", max_samples_per_column)
+                # print("columns_on_plot", columns_on_plot)
             figsizeFactor = 1
+            # if samples_on_plot // max_samples_per_plot == 0:
+            #     figsizeFactor = min(samples_on_plot/max_samples_per_column * figsizeFactor + 0.2, 1)
             # Create a new figure for each set of three columns (DINA4 format: 8.27 x 11.69 inches)
             fig, axs = plt.subplots(1, columns_on_plot, figsize=(figW, figsizeFactor*figH))  # DINA4 width split across 3 columns
             if columns_on_plot == 1:
                 axs = [axs]
             bar_height = 0.65  # Height of the horizontal bars
-            
-            # Get numeric y-values and labels for this plot (reversed for top-to-bottom plotting)
-            sample_ids_for_plot_numeric = sample_ids_numeric[start_idx:end_idx][::-1]
-            sample_ids_labels_for_plot = sample_ids_labels[start_idx:end_idx][::-1]
-            
-            probabilities_on_plot = probabilities_sorted[start_idx:end_idx][::-1]  # Reverse probabilities
-            
+            # for col in range(columns_on_plot):
+            #     col_start = col * max_samples_per_column
+            #     col_end = min(col_start + max_samples_per_column, len(sample_ids_on_plot))
+            #     # print("col_start", col_start)
+            #     # print("col_end", col_end)
+            #     # print("max_samples_per_column", max_samples_per_column)
+            #     # print("len(sample_ids_on_plot)", len(sample_ids_on_plot))
+            #     bottom = np.zeros(col_end - col_start)
+            #     # Reverse the sample IDs and the corresponding probabilities for plotting top to bottom
+            #     sample_ids_for_plot = sample_ids_on_plot[col_start:col_end][::-1]
+            #     probabilities_for_plot = probabilities_on_plot[col_start:col_end][::-1]  # Reverse probabilities
+            #     for component in range(n_components):
+            #         logger.info("4")
+            #         axs[col].barh(
+            #             sample_ids_for_plot,  # Reversed sample IDs to plot top-to-bottom
+            #             probabilities_for_plot[:, component],  # Reversed probabilities for the current component
+            #             bar_height,
+            #             label=f'Cluster {component + 1}' if col == 0 else "",
+            #             left=bottom
+            #         )
+            #         bottom += probabilities_for_plot[:, component]
+            #     axs[col].set_xlabel('Probability of Cluster Membership')
+            #     axs[col].set_ylabel('Samples (by ID)')
+            #     axs[col].tick_params(axis='y', labelsize=7)  # Adjust the '6' to your preferred font size
+            #     axs[col].set_ylim(-0.2, len(sample_ids_for_plot))  # Ensures no excess space at the top or bottom
+            #     axs[col].set_xlim(0, 1)  # Ensures no excess space at the top or bottom
             for col in range(columns_on_plot):
                 col_start = col * max_samples_per_column
-                col_end = min(col_start + max_samples_per_column, len(sample_ids_for_plot_numeric))
+                col_end = min(col_start + max_samples_per_column, len(sample_ids_on_plot))
                 bottom = np.zeros(col_end - col_start)
                 
-                # Slice the numeric values and labels for this column
-                y_vals = sample_ids_for_plot_numeric[col_start:col_end]
-                y_labels = sample_ids_labels_for_plot[col_start:col_end]
-                probs = probabilities_on_plot[col_start:col_end]
+                # Instead of using sample_ids_on_plot (padded strings) as y-values,
+                # create an array of numeric positions (0, 1, 2, ...)
+                y_positions = np.arange(col_end - col_start)
+                # But keep the padded labels for display, in the reversed order
+                y_labels = sample_ids_on_plot[col_start:col_end][::-1]
+                # Reverse probabilities for plotting (order must match y_positions)
+                probabilities_for_plot = probabilities_on_plot[col_start:col_end][::-1]
                 
                 for component in range(n_components):
                     axs[col].barh(
-                        y_vals,  # numeric y-values for plotting
-                        probs[:, component],  # probabilities for current component
+                        y_positions,  # use numeric positions for plotting
+                        probabilities_for_plot[:, component],  # probabilities for the current component
                         bar_height,
                         label=f'Cluster {component + 1}' if col == 0 else "",
                         left=bottom
                     )
-                    bottom += probs[:, component]
-                
+                    bottom += probabilities_for_plot[:, component]
+                    
                 axs[col].set_xlabel('Probability of Cluster Membership')
                 axs[col].set_ylabel('Samples (by ID)')
                 axs[col].tick_params(axis='y', labelsize=7)
-                # Set the y-ticks with numeric positions...
-                axs[col].set_yticks(y_vals)
-                # ...and then set the zero-padded labels
+                # Set numeric y-ticks, then assign your padded labels
+                axs[col].set_yticks(y_positions)
                 axs[col].set_yticklabels(y_labels)
-                axs[col].set_ylim(-0.2, len(y_vals))
+                axs[col].set_ylim(-0.2, len(y_positions))
                 axs[col].set_xlim(0, 1)
-
             # Add a single title across the figure
+            #fig.suptitle('Membership Probabilities per Sample', fontsize=10)
             handles, labels = axs[0].get_legend_handles_labels()
             fig.legend(handles, labels, loc='upper center', ncol=n_components, bbox_to_anchor=(0.5, 0.99))
             plt.tight_layout(rect=[0, 0, 1, 0.97])  # Reduced rect to leave less space at the top
@@ -432,6 +453,8 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             png_filename = f'{path}/cluster_probabilities_plot_{plot_idx + 1}.png'
             fig.savefig(png_filename, dpi=300)
             plt.close()
+
+
 
 
 
