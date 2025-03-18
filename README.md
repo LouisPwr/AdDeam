@@ -92,4 +92,4 @@ Running CLASSIC mode:
 
 Clustering:
 
-`addeam-bam2prof.py -i path/to/profiles/meta/outdir -o path/to/clusters/meta/outdir`
+`addeam-cluster.py -i path/to/profiles/meta/outdir -o path/to/clusters/meta/outdir`
