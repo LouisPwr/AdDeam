@@ -121,7 +121,7 @@ The PCA and representative damage profiles, to be found in the PDF as well, look
 
 
 
-## Quick Start
+## Test Data & Quick Start
 
 You can test the tool using the provided BAM files in this repository.
 
