@@ -76,8 +76,6 @@ Once the profiles are generated, cluster and visualize them using `addeam-cluste
 
 ## Output & Interpretation:
 
-![Figure_2 Output Simulations](https://github.com/user-attachments/assets/2eee9e40-e067-4f43-a7bd-aa16d94632e4)
-
 ### Damage Profiles Directory with `addeam-bam2prof.py`
 The `addeam-bam2prof.py` command creates a directory containing multiple `*.prof` files.
 
@@ -106,15 +104,24 @@ Running `addeam-cluster.py` on a directory of `*.prof` files generates the follo
     - Example: `addeamOutput/GMM/k3/cluster_report_k3.tsv` lists reference names with their probability assignments to clusters `1`, `2`, and `3`.
   - Individual GMM plots for modularity.
 
-
+The automatically generated report for the test data (meta mode) is shown for k=3:
+[damage_report_k3.pdf](https://github.com/user-attachments/files/19324065/damage_report_k3.pdf)
 
 ## Quick Start
 
 You can test the tool using the provided BAM files in this repository.
 
 - The `testAdDeam` directory contains six BAM files for testing both the **CLASSIC** and **META** mode.
-- Clone this repository or, if AdDeam is already installed, download the `testAdDeam` directory.
-- Retrieve the full paths of the BAM files (e.g., using `readlink -f`) and add them to the `test.txt` file.
+- Clone this repository or, if AdDeam is already installed, download the `testAdDeam` directory from this repository.
+- Retrieve the full paths of the BAM files (e.g., using `readlink -f`) and add them to the `test.txt` file. The file should look like:
+
+      /path/to/testAdDeam/high1_sorted_md.bam
+      /path/to/testAdDeam/high2_sorted_md.bam
+      /path/to/testAdDeam/low1_sorted_md.bam
+      /path/to/testAdDeam/low2_sorted_md.bam
+      /path/to/testAdDeam/mid1_sorted_md.bam
+      /path/to/testAdDeam/mid2_sorted_md.bam
+  
 - Use the `test.txt` file as input for the `addeam-bam2prof.py` command.
 
 Running META mode:
