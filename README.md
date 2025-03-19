@@ -53,9 +53,9 @@ To install AdDeam using Conda, simply run:
 
     git clone --recursive https://github.com/LouisPwr/AdDeam
     cd AdDeam/
+    git submodule update --init --depth 1
     pip install -r requirements.txt
     cd submodules/src/ && make
-    cd ../..
     
 Important Notes:
 - [bam2prof](https://github.com/grenaud/bam2prof) is a C++ tool used by **AdDeam** for efficiently generating damage profiles from BAM files. It relies on htslib and samtools.
