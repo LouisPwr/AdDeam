@@ -1,4 +1,0 @@
-[submodule "submodules"]
-	path = submodules
-	url = https://github.com/grenaud/bam2prof
-	branch = master
