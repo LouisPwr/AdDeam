@@ -27,7 +27,7 @@ diffprof:	diffprof.o  ReconsReferenceHTSLIB.o ../lib/libgab/libgab.a   ../lib/li
 	git clone --recursive https://github.com/samtools/htslib.git ../lib/htslib/
 
 ../lib/samtools/libst.a:  ../lib/samtools/samtools.h
-	cd ../lib/samtools/ && make && cd ../..
+	cd ../lib/samtools/ && make LDFLAGS="$(LDFLAGS)" && cd ../..
 
 ../lib/samtools/samtools.h:
 	rm -rf ../lib/samtools/
