@@ -54,8 +54,8 @@ To install AdDeam using Conda, simply run:
     git clone --recursive https://github.com/LouisPwr/AdDeam
     cd AdDeam/
     pip install -r requirements.txt
+    git submodule update --init --depth 1
     cd submodules/src/ && make
-    cd ../..
     
 Important Notes:
 - [bam2prof](https://github.com/grenaud/bam2prof) is a C++ tool used by **AdDeam** for efficiently generating damage profiles from BAM files. It relies on htslib and samtools.
@@ -148,3 +148,24 @@ Running CLASSIC mode:
 Clustering:
 
 `addeam-cluster.py -i path/to/profiles/meta/outdir -o path/to/clusters/meta/outdir`
+
+
+## Citing
+
+Until the article is published, please cite:
+
+AdDeam: A Fast and Scalable Tool for Estimating and Clustering Reference-Level Damage Profiles Louis Kraft, Thorfinn Sand Korneliussen, Peter Wadd Sackett, Gabriel Renaud *bioRxiv* 2025.03.20.644297; doi: https://doi.org/10.1101/2025.03.20.644297
+
+or in Bibtex:
+
+    @article {Kraft2025.03.20.644297,
+    	author = {{Kraft, Louis and Korneliussen, Thorfinn Sand and Sackett, Peter Wadd and Renaud, Gabriel}], 
+ 	    title = {{AdDeam: A Fast and Scalable Tool for Estimating and Clustering Reference-Level Damage Profiles}},
+	    elocation-id = {2025.03.20.644297},
+	    year = {2025},
+	    doi = {10.1101/2025.03.20.644297},
+	    publisher = {Cold Spring Harbor Laboratory},	   
+	    URL = {https://www.biorxiv.org/content/early/2025/03/24/2025.03.20.644297},
+	    eprint = {https://www.biorxiv.org/content/early/2025/03/24/2025.03.20.644297.full.pdf},
+	    journal = {bioRxiv}
+    }
