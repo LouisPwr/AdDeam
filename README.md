@@ -51,7 +51,7 @@ To install AdDeam using Conda, simply run:
 
 ### 2. Install from Source
 
-    git clone --recursive https://github.com/LouisPwr/AdDeam
+    git clone https://github.com/LouisPwr/AdDeam
     cd AdDeam/
     pip install -r requirements.txt
     git submodule update --init --depth 1
