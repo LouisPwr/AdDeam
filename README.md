@@ -9,7 +9,7 @@ AdDeam comes with two distinct modes:
   
 - **Meta Mode**: Generates individual damage profiles for each reference (contig, scaffold or chromosome) in the BAM file. This mode is especially beneficial for metagenomic datasets aligned against large reference databases or when you align the ancient DNA fragments back to the assembly to identify which contigs/scaffolds are likely to be contamination.
 
-![Figure_1_Workflow](https://github.com/user-attachments/assets/ecdccd79-74b8-48f8-acdf-3c9ad6f7486e)
+![Figure_1_workflow](https://github.com/user-attachments/assets/49fb0aa8-925b-4e4e-81ef-912bc2fcc90f)
 
 ## Requirements
 To ensure optimal performance and accurate results, the BAM files used with AdDeam must meet the following requirements:
