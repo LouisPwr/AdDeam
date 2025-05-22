@@ -8,9 +8,12 @@ import os
 import sys
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
-import logging
+import logging, sys
 
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(asctime)s %(levelname)s %(message)s")
+
+
 logger = logging.getLogger(__name__)
 
 # def find_bam2prof():
@@ -84,10 +87,11 @@ def run_bam2prof(args_list, hpc=None, b2p=None):
     logger.info(f"bam2prof command: '{command_str}'")
     result = subprocess.run(command, capture_output=True, text=True)
 
-    # if result.stdout.strip():
-    #     logger.info(result.stdout)
-    # if result.stderr.strip():
-    #     logger.error(result.stderr)
+    # result = subprocess.run(command, capture_output=True, text=True)
+    # Merge stdout+stderr so we catch everything, then print to stdout
+    result = subprocess.run( command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    # print all output (including errors) to stdout
+    print(result.stdout, end='')
 
     return result
 
@@ -120,6 +124,8 @@ def main():
     parser.add_argument('-threads', type=int, default=1, help='Number of threads. One file per thread (default: %(default)s)')
     parser.add_argument('-hpc', help='Dry Run. Pipe execution commands to file')
     parser.add_argument('-bam2profpath', help='Provide absolute path to bam2prof binary and use it for execution')
+    parser.add_argument('-minConverge', type=float, default=0.01, help='Set minimum threshold for substitution frequency convergence (default: %(default)s)')
+    parser.add_argument('-stepsConverge', type=int, default=500, help='Check every step-size number of aligned fragments for convergence (default: %(default)s)')
 
     args = parser.parse_args()
 
@@ -145,6 +151,10 @@ def main():
         base_args.extend(['-precision', str(args.precision)])
     if args.minAligned:
         base_args.extend(['-minAligned', str(args.minAligned)])
+    if args.minAligned:
+        base_args.extend(['-minConverge', str(args.minConverge)])
+    if args.minAligned:
+        base_args.extend(['-stepsConverge', str(args.stepsConverge)])
     if args.paired:
         base_args.append('-paired')
     if args.ref_id:
