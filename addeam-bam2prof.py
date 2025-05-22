@@ -81,7 +81,7 @@ def run_bam2prof(args_list, hpc=None, b2p=None):
         with open(hpc, 'a') as f:
             f.write(command_str + '\n')
         return
-
+    logger.info(f"bam2prof command: '{command_str}'")
     result = subprocess.run(command, capture_output=True, text=True)
 
     # if result.stdout.strip():
@@ -108,7 +108,7 @@ def main():
     parser.add_argument('-paired', action='store_true', help='Allow paired reads (default: %(default)s)')
     parser.add_argument('-meta', action='store_true', help='One Profile per unique reference (default: %(default)s)')
     parser.add_argument('-classic', action='store_true', help='One Profile per bam file (default: %(default)s)')
-    parser.add_argument('-precision', type=float, default=0, help='Set minimum decimal precision for substitution frequency computation (default: %(default)s [= all alignments used]). Increase speed by setting to either (from faster to slower): 0.001, 0.0001, 0.00001, ... ) ')
+    parser.add_argument('-precision', type=float, default=0, help='Set minimum decimal precision for substitution frequency computation (default: %(default)s [= all alignments used]). Increase speed by setting to either (from faster to slower): 0.01, 0.001, ... ) ')
     parser.add_argument('-minAligned', type=float, default=10000000, help='Number of aligned sequences after which substitution patterns are checked if frequencies converge (default: %(default)s)')
     parser.add_argument('-ref-id', help='Specify reference ID')
     parser.add_argument('-single', action='store_true', help='Single strand library (default: %(default)s)')
@@ -191,15 +191,21 @@ def main():
         else:
             logger.error("Error: -meta or -classic needs to be specified")
             return
-    
+
+        missing = [bam for bam in bam_files if not os.path.exists(bam)]
+        if missing:
+            for bam in missing:
+                logger.error(f"Required BAM not found: {bam}")
+            sys.exit(1)
+
         futures = {
-            executor.submit(run_bam2prof, base_args + [bam], hpc=hpc_file, b2p = bam2prof_path): bam
+            executor.submit(run_bam2prof, base_args + [bam], hpc=hpc_file, b2p=bam2prof_path): bam
             for bam in bam_files
         }
         for future in as_completed(futures):
             bam_file = futures[future]
             try:
-                result = future.result()
+                _ = future.result()
             except Exception as exc:
                 logger.error(f"{bam_file} generated an exception: {exc}")
 
