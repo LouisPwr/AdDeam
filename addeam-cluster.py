@@ -24,6 +24,7 @@ from sklearn.mixture import GaussianMixture
 from scipy.spatial.distance import euclidean
 
 import datetime
+import sys
 
 from PyPDF2 import PdfReader, PdfWriter
 
@@ -274,7 +275,8 @@ def compute_normalized_distances(transformed_data, cluster_assignments, sample_n
 
     return distance_report
 
-def perform_gmm(combined_matrix, n_components=2, max_iter=10000, n_init=2000, tol=1e-3, random_state=1, covariance_type='spherical', reg_covar=1e-3):
+#def perform_gmm(combined_matrix, n_components=2, max_iter=10000, n_init=2000, tol=1e-3, random_state=1, covariance_type='spherical', reg_covar=1e-3):
+def perform_gmm(combined_matrix, n_components=2, max_iter=10000, n_init=2500, tol=1e-6, random_state=1, covariance_type='spherical', reg_covar=1e-3):
     """
     Perform Gaussian Mixture Modeling (GMM) on the combined matrix and return the probabilities of cluster assignment.
     """
@@ -387,32 +389,6 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             if columns_on_plot == 1:
                 axs = [axs]
             bar_height = 0.65  # Height of the horizontal bars
-            # for col in range(columns_on_plot):
-            #     col_start = col * max_samples_per_column
-            #     col_end = min(col_start + max_samples_per_column, len(sample_ids_on_plot))
-            #     # print("col_start", col_start)
-            #     # print("col_end", col_end)
-            #     # print("max_samples_per_column", max_samples_per_column)
-            #     # print("len(sample_ids_on_plot)", len(sample_ids_on_plot))
-            #     bottom = np.zeros(col_end - col_start)
-            #     # Reverse the sample IDs and the corresponding probabilities for plotting top to bottom
-            #     sample_ids_for_plot = sample_ids_on_plot[col_start:col_end][::-1]
-            #     probabilities_for_plot = probabilities_on_plot[col_start:col_end][::-1]  # Reverse probabilities
-            #     for component in range(n_components):
-            #         logger.info("4")
-            #         axs[col].barh(
-            #             sample_ids_for_plot,  # Reversed sample IDs to plot top-to-bottom
-            #             probabilities_for_plot[:, component],  # Reversed probabilities for the current component
-            #             bar_height,
-            #             label=f'Cluster {component + 1}' if col == 0 else "",
-            #             left=bottom
-            #         )
-            #         bottom += probabilities_for_plot[:, component]
-            #     axs[col].set_xlabel('Probability of Cluster Membership')
-            #     axs[col].set_ylabel('Samples (by ID)')
-            #     axs[col].tick_params(axis='y', labelsize=7)  # Adjust the '6' to your preferred font size
-            #     axs[col].set_ylim(-0.2, len(sample_ids_for_plot))  # Ensures no excess space at the top or bottom
-            #     axs[col].set_xlim(0, 1)  # Ensures no excess space at the top or bottom
             for col in range(columns_on_plot):
                 col_start = col * max_samples_per_column
                 col_end = min(col_start + max_samples_per_column, len(sample_ids_on_plot))
@@ -455,10 +431,7 @@ def plot_cluster_probabilities_sorted_multicol(probabilities, sample_names, path
             plt.close()
 
 
-
-
-
-def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_path, reverse, method, n_components, pdf_filename="weighted_profiles.pdf"):
+def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_path, reverse, method, n_components, pdf_filename="weighted_profiles.pdf", libtype="paired"):
     """
     Calculate and plot weighted representative damage profiles based on the cluster probabilities,
     and save the plots to a multi-page PDF.
@@ -483,27 +456,37 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
     global_max_damage += 0.1
 
     with PdfPages(pdf_path) as pdf:
+
+        best_clusters = np.argmax(probabilities, axis=1)
+
         for cluster in range(n_components):
             # Initialize combined data dictionary with scalar zeros
             weighted_combined_data = {i: 0.0 for i in range(10)}
-            total_prob = 0
+            cluster_combined_data = []
+            total_prob = 0.0
+
             for i, sample_name in enumerate(sample_names):
                 prob = probabilities[i, cluster]
-                if prob > 0:
-                    # Extract the combined data for the current sample directly from the combined_matrix
-                    combined_data = combined_matrix[i]
-                    # Split the combined data into 5p and 3p components
-                    fivep_data = combined_data[:5]  # First 5 positions for the 5p data
-                    threep_data = combined_data[5:]  # Last 5 positions for the 3p data
-                    # Reverse the 3p data if needed
-                    if not reverse:
-                        threep_data = threep_data[::-1]
-                    # Concatenate the 5p and (potentially reversed) 3p data
-                    combined_data = np.concatenate([fivep_data, threep_data])
-                    # Weight and accumulate the combined data using scalars
-                    for pos in range(10):
-                        weighted_combined_data[pos] += combined_data[pos] * prob
-                    total_prob += prob
+                if prob <= 0:
+                    continue
+
+                # pull out your 10‐element vector
+                combined_data = combined_matrix[i]
+
+                # only append to the *hard* cluster
+                if best_clusters[i] == cluster:
+                    cluster_combined_data.append(combined_data)
+
+                # split, maybe reverse, concat, and weight exactly as before
+                fivep_data  = combined_data[:5]
+                threep_data = combined_data[5:]
+                if not reverse:
+                    threep_data = threep_data[::-1]
+                reordered = np.concatenate([fivep_data, threep_data])
+
+                for pos in range(10):
+                    weighted_combined_data[pos] += reordered[pos] * prob
+                total_prob += prob
             
             # Normalize by total probability
             for pos in range(10):
@@ -513,8 +496,12 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
             # Plotting the results
             save_weighted_profiles_to_tsv(weighted_combined_data, plot_path, f'cluster_{cluster + 1}_weighted_profile')
             fig, axs = plt.subplots(1, 2, figsize=(8, 3))
-            plot_prof_substitutions(axs[0], weighted_combined_data, global_max_damage, substitution_type='C>T', color='red', positions_range=(0, 5), xlabel="Position from 5' end")
-            plot_prof_substitutions(axs[1], weighted_combined_data, global_max_damage, substitution_type='G>A', color='blue', positions_range=(5, 10), xlabel="Position from 3' end")
+            plot_prof_substitutions(axs[0], weighted_combined_data, global_max_damage, cluster_combined_data, substitution_type='C>T', color='red', positions_range=(0, 5), xlabel="Position from 5' end", libtype=libtype)
+
+            subtype_id = 'G>A'
+            if libtype == "mixed":
+                subtype_id = 'C>T / G>A'
+            plot_prof_substitutions(axs[1], weighted_combined_data, global_max_damage, cluster_combined_data, substitution_type=subtype_id, color='blue', positions_range=(5, 10), xlabel="Position from 3' end", libtype=libtype)
             plt.suptitle(f'Representative Substitution Frequencies for Cluster {cluster + 1} ({method})')
             plt.tight_layout()
             pdf.savefig(fig)
@@ -523,24 +510,108 @@ def plot_weighted_profiles(probabilities, sample_names, combined_matrix, plot_pa
             plt.close(fig)
     logger.info(f"Weighted profiles saved to {pdf_path}")
 
-def plot_prof_substitutions(ax, all_combined_data, max_dam, substitution_type='C>T', color='red', positions_range=(0, 5), xlabel="Position from 5' end"):
+
+
+def plot_all_profiles(sample_names, combined_matrix, plot_path, reverse, libtype):
     """
-    Create a scatter plot with a continuous line for substitutions.
+    Plot each sample’s 5' and 3' damage profiles as a two-panel figure,
+    and save each one as an individual PNG.
+
+    Parameters:
+    - sample_names: List of sample name strings.
+    - combined_matrix: 2D array [n_samples × 10] of damage values.
+    - plot_path: Directory where PNGs will be written.
+    - reverse: If False, reverse the 3' portion before plotting.
+    - single_strand: Passed through to your plotting helper.
     """
-    #max_dam = max_dam + 0.1
+    os.makedirs(plot_path, exist_ok=True)
+
+    # if libtype=="mixed":
+    #     logger.info(f"Warning: Mixed libraries. Plots will be 5p C>T and 3p G>A.")
+
+    # shared y-axis limit
+    global_max = np.max(combined_matrix)
+    y_lim = global_max + 0.1
+
+    for i, name in enumerate(sample_names):
+        data = combined_matrix[i]
+        fivep = data[:5]
+        threep = data[5:]
+        if not reverse:
+            threep = threep[::-1]
+        reordered = np.concatenate([fivep, threep])
+
+        fig, axes = plt.subplots(1, 2, figsize=(8, 3))
+        # 5' panel: C>T
+        plot_prof_substitutions(
+            axes[0], reordered, y_lim, [],
+            substitution_type='C>T',
+            color='red',
+            positions_range=(0, 5),
+            xlabel="Position from 5' end",
+            libtype=libtype
+        )
+        # 3' panel: G>A
+
+        subtype_id = 'G>A'
+        if libtype == "mixed":
+            subtype_id = 'C>T / G>A'
+
+        plot_prof_substitutions(
+            axes[1], reordered, y_lim, [],
+            substitution_type=subtype_id,
+            color='blue',
+            positions_range=(5, 10),
+            xlabel="Position from 3' end",
+            libtype=libtype
+        )
+
+        fig.suptitle(f"{name}", fontsize=10)
+        plt.tight_layout()
+
+        out_png = os.path.join(plot_path, f"{name}_profile.png")
+        fig.savefig(out_png, dpi=300)
+        plt.close(fig)
+
+    logger.info(f"All profiles saved as PNGs in {plot_path}")
+
+
+
+def plot_prof_substitutions(ax, all_combined_data, max_dam, cluster_combined_data, substitution_type='C>T', color='red', positions_range=(0, 5), xlabel="Position from 5' end", libtype="paired"):
+    """
+    Create a scatter plot with a continuous line for substitutions,
+    and overlay cluster-specific profiles as thin grey lines.
+    """
     positions = list(range(*positions_range))
-    if substitution_type == 'G>A':
+    # set up x-axis labels
+    if substitution_type == 'G>A' or substitution_type == 'C>T / G>A':
         x_labels = [-4, -3, -2, -1, 0]
     else:
         x_labels = positions
+
+    substitution_type_label=substitution_type
+    if libtype == "single":
+        substitution_type_label='C>T'
+
+    # first, plot each cluster in light grey
+    if cluster_combined_data is not None:
+        for cluster in cluster_combined_data:
+            # extract only the relevant slice for this range
+            cluster_freqs = [cluster[pos] for pos in positions]
+            ax.plot(positions, cluster_freqs, color='grey', linewidth=0.5, linestyle='-', alpha=0.6, zorder=1)
+
+    # then plot the main aggregated curve on top
     frequencies = [all_combined_data[pos] for pos in positions]
-    ax.plot(positions, frequencies, color=color, linestyle='-', marker='o')
+    ax.plot(positions, frequencies, color=color, linestyle='-', marker='o', zorder=2)
+
+    # labels, limits, ticks, grid
     ax.set_xlabel(xlabel, fontsize=10)
-    ax.set_ylabel(f'{substitution_type} Substitution Frequency', fontsize=10)
+    ax.set_ylabel(f'{substitution_type_label} Substitution Frequency', fontsize=10)
     ax.set_ylim(0, max_dam)
     ax.set_xticks(positions)
     ax.set_xticklabels(x_labels)
     ax.grid(axis='y', linestyle='--')
+
 
 def save_weighted_profiles_to_tsv(weighted_combined_data, output_dir, prefix="none"):
     """
@@ -578,29 +649,57 @@ def save_weighted_profiles_to_tsv(weighted_combined_data, output_dir, prefix="no
 
 
 def validate_concatenated_row(concatenated_row):
-    """
-    Validate if the concatenated row.
-    """
-    # Check for 5p part (first half)
-    if (concatenated_row[0] > concatenated_row[1] and
-        concatenated_row[0] > concatenated_row[2] and
-        concatenated_row[0] > concatenated_row[3] and
-        concatenated_row[0] > concatenated_row[4] and
-        concatenated_row[1] > concatenated_row[2] and
-        concatenated_row[1] > concatenated_row[3] and
-        concatenated_row[1] > concatenated_row[4] and
-        # Check for 3p part (last half)
-        concatenated_row[-1] > concatenated_row[-2] and
-        concatenated_row[-1] > concatenated_row[-3] and
-        concatenated_row[-1] > concatenated_row[-4] and
-        concatenated_row[-1] > concatenated_row[-5] and
-        concatenated_row[-2] > concatenated_row[-3] and
-        concatenated_row[-2] > concatenated_row[-4] and
-        concatenated_row[-2] > concatenated_row[-5]):
-        return True
-    return False
+    return True
 
-def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns, minmap = 1000, column_5p=6, column_3p=7, balance=[0, 0, 0]):
+
+def get_strand_columns( matrix_5p, matrix_3p, column_5p, column_3p, libtype):
+    """
+    Extracts 5' and 3' strand data according to the requested mode.
+
+    Parameters
+    ----------
+    matrix_5p : pd.DataFrame
+        DataFrame containing the 5' data.
+    matrix_3p : pd.DataFrame
+        DataFrame containing the 3' data.
+    column_5p : int
+        1-based index of the column to take from each DataFrame for the 5' strand.
+    column_3p : Optional[int], default=None
+        1-based index of the column to take for the 3' strand when not single_strand.
+        If None, defaults to the same as column_5p.
+    fullon : bool, default=False
+        If True, concatenate the selected columns from both 5p and 3p matrices.
+    single_strand : bool, default=False
+        If True, both 5' and 3' strands come from the same column index.
+
+    Returns
+    -------
+    Tuple[np.ndarray, np.ndarray]
+        (five_prime_data, three_prime_data)
+    """
+    # Convert to zero-based indices
+    idx5 = column_5p - 1
+    idx3 = idx5 if libtype=="single" else (column_3p - 1 if column_3p else idx5)
+
+    # Grab raw arrays
+    arr5p = matrix_5p.iloc[:, idx5].values
+    arr3p = matrix_3p.iloc[:, idx3].values
+
+    if libtype=="mixed":
+        # If mixed, also grab the complementary half from the other matrix
+        other5 = matrix_3p.iloc[:, idx5].values
+        other3 = matrix_5p.iloc[:, idx3].values
+        five_prime = np.concatenate([arr5p, other5[::-1]])
+        three_prime = np.concatenate([other3, arr3p[::-1]])
+    else:
+        five_prime = arr5p
+        three_prime = arr3p[::-1]
+
+    return five_prime, three_prime
+
+
+
+def process_directory_combined(directory, num_rows_5p, num_rows_3p, minmap = 1000, column_5p=6, column_3p=7, libtype="paired"):
     """
     Process all matrices in the directory and build a combined matrix for analysis.
     """
@@ -632,19 +731,16 @@ def process_directory_combined(directory, num_rows_5p, num_rows_3p, num_columns,
         if matrix_3p is None or matrix_5p is None or check_for_nan(matrix_3p) or check_for_nan(matrix_5p):
             continue
 
-        # Extract the relevant columns and concatenate them
-        column_5p_data = matrix_5p.iloc[:, column_5p - 1].values
-        column_3p_data = matrix_3p.iloc[:, column_3p - 1].values
-        concatenated_row = np.concatenate([column_5p_data, column_3p_data[::-1]])
+        five_prime_data, three_prime_data = get_strand_columns(matrix_5p, matrix_3p, column_5p=column_5p, column_3p=column_3p, libtype=libtype)
+
+        #concatenated_row = np.concatenate([column_5p_data, column_3p_data[::-1]])
+        concatenated_row = np.concatenate([five_prime_data, three_prime_data])
         # Determine the number of mapped reads
         nMapped = int(basename.split('_n')[-1])
         # Add the concatenated row based on conditions
-        # if nMapped < minmap and validate_concatenated_row(concatenated_row) and nMapped > 100:
-        #     combined_matrix.append(concatenated_row)
-        #     sample_names.append(basename)
-        if nMapped >= minmap:
-            combined_matrix.append(concatenated_row)
-            sample_names.append(basename)
+        if nMapped >= minmap and validate_concatenated_row(concatenated_row):
+                combined_matrix.append(concatenated_row)
+                sample_names.append(basename)
         else:
             sample_names_outsourced.append(basename)
     # Convert the combined matrix to a NumPy array for further processing
@@ -668,6 +764,15 @@ def main():
                         help='Do not plot probability per sample. Write to TSV only. [off=0,on=1](default: %(default)s)')
     parser.add_argument('-m', type=int, default=1000, metavar='Minimum Mapped Reads',
                         help='Require at least m reads to be mapped to a reference to be included in clustering (default: %(default)s)')
+    parser.add_argument('-single', type=int, default=0, metavar='ss-Library only',
+                        help='Set to 1 if reads are single strand library (default: %(default)s)')
+    parser.add_argument('-plotall', type=int, default=0, metavar='Plot All Profs',
+                        help='Set to 1 if all profs should be plotted individually. Slow! (default: %(default)s)')
+    parser.add_argument('-mixed', type=int, default=0, metavar='ss- and paired-end Input',
+                        help='Set to 1 if input are bam files from ss- and paired-end libraries. (default: %(default)s)')
+    parser.add_argument('-lib', choices=['single', 'paired', 'mixed'], default='paired', help=('Type of library reads in your input BAMs. (default: %(default)s)')
+    )
+
 
     args = parser.parse_args()
     input_dir = args.i
@@ -675,37 +780,46 @@ def main():
     cluster_k = args.k
     less_plots = args.q
     min_map = args.m
+    #single_strand_flag = args.single
+    all_plots_flag = args.plotall
+    libtype = args.lib
 
     # Create the output directory if it doesn't exist
     os.makedirs(plot_path, exist_ok=True)
 
     now = datetime.datetime.now()
     logger.info("Preparing Matrix: %s", now)
-    # Process all matrices and get results
-    combined_matrix, sample_names, sample_names_outsourced = process_directory_combined(
+
+    # get fullon matrix
+    combined_matrix_compute, sample_names, sample_names_outsourced = process_directory_combined(
         input_dir,
         num_rows_5p=5,
         num_rows_3p=5,
-        num_columns=1,
         minmap = min_map,
         column_5p=6,
-        column_3p=7
+        column_3p=7,
+        libtype=libtype,
     )
+
+    combined_matrix  =  np.hstack((combined_matrix_compute[:, :5], combined_matrix_compute[:, -5:]))
+
     now = datetime.datetime.now()
     logger.info("Preparing Matrix Done %s", now)
 
-    original_matrix = combined_matrix
-
     # # Mask out zeros by replacing them with np.inf (so they are ignored in the min calculation)
-    masked_matrix = np.where(combined_matrix == 0, np.inf, combined_matrix)
+    masked_matrix = np.where(combined_matrix_compute == 0, np.inf, combined_matrix_compute)
     # # Find the minimum value of the non-zero elements
     min_non_zero_value = np.min(masked_matrix)
     small_constant = min_non_zero_value
-    matrix_safe = np.where(combined_matrix == 0, small_constant, combined_matrix)
+    matrix_safe = np.where(combined_matrix_compute == 0, small_constant, combined_matrix_compute)
 
-    # Apply the natural logarithm
-    log_matrix = np.log(matrix_safe)
-    combined_matrix = log_matrix
+    # Apply the natural logarithm 
+    combined_matrix_compute = np.log(matrix_safe)
+    combined_matrix_compute_pca  =  np.hstack((combined_matrix_compute[:, :5], combined_matrix_compute[:, -5:]))
+
+    # print(combined_matrix_compute)
+    # print(combined_matrix_compute_pca)
+    # print(combined_matrix)
 
     # Save file with outsourced sample ids
     outsource_file = os.path.join(plot_path, 'outsourced_samples.tsv')
@@ -723,13 +837,19 @@ def main():
         pdf_list = []
         
         # Perform GMM clustering
-        gmm_model, gmm_cluster_assignments, gmm_probabilities = perform_gmm(
-            combined_matrix, n_components=k_iter)
+        # if only5p_flag != 1:
+        gmm_model, gmm_cluster_assignments, gmm_probabilities = perform_gmm(combined_matrix_compute, n_components=k_iter)
+        # else:
+        #     gmm_model, gmm_cluster_assignments, gmm_probabilities = perform_gmm(combined_matrix_only5p, n_components=k_iter)
         now = datetime.datetime.now()
         logger.info("Clustering Done %s", now)
 
         # Make PCA Plot with gradient
-        transformed_data, explained_variance, pca = perform_pca(combined_matrix, None)
+        # transformed_data, explained_variance, pca = perform_pca(combined_matrix, None)
+        # if only5p_flag != 1:
+        transformed_data, explained_variance, pca = perform_pca(combined_matrix_compute_pca, None)
+        # else:
+        #     transformed_data, explained_variance, pca = perform_pca(combined_matrix_only5p, None)
         pca_plot_path = create_plot_directories(plot_path, "PCA", k_iter)
         n_clu = gmm_probabilities.shape[1]
         cluster_assignments = np.argmax(gmm_probabilities, axis=1)
@@ -751,10 +871,15 @@ def main():
                 pdf_filename=f"cluster_report_k{k_iter}.pdf")
             pdf2 = os.path.join(gmm_plot_path, f"cluster_report_k{k_iter}.pdf")
             pdf_list.append(pdf2)
+
+        if all_plots_flag == 1:
+            all_plots_path= os.path.join(plot_path, "plots_all_profs")
+            plot_all_profiles(sample_names, combined_matrix, all_plots_path, True, libtype=libtype)
+
         
         plot_weighted_profiles(
-            gmm_probabilities, sample_names, original_matrix, gmm_plot_path, True,
-            "GMM", k_iter, pdf_filename=f"weighted_profiles_k{k_iter}.pdf")
+            gmm_probabilities, sample_names, combined_matrix, gmm_plot_path, True,
+            "GMM", k_iter, pdf_filename=f"weighted_profiles_k{k_iter}.pdf",  libtype=libtype)
         pdf3 = os.path.join(gmm_plot_path, f"weighted_profiles_k{k_iter}.pdf")
         pdf_list.append(pdf3)
 
@@ -778,5 +903,10 @@ def main():
         
         logger.info(f"PDFs merged and scaled to {target_width/72:.2f} inches width. Final PDF: {scaled_pdf_path}")
 
+
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        logger.info("Interrupted by user. Exiting.")
+        sys.exit(0)
