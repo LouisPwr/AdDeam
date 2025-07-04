@@ -758,18 +758,16 @@ def main():
                         help='Path to the directory containing the profiles generated with bam2prof.')
     parser.add_argument('-o', type=str, required=True, metavar='OUTPUT_DIR',
                         help='Path where your plots will be saved.')
-    parser.add_argument('-k', type=int, default=4, metavar='Clusters',
+    parser.add_argument('-k', type=int, default=4, metavar='CLUSTERS',
                         help='Run clustering from 2 to k. (default: %(default)s)')
-    parser.add_argument('-q', type=int, default=0, metavar='Less Plots (faster)',
+    parser.add_argument('-q', type=int, default=0, metavar='LESS PLOTS (FASTER)',
                         help='Do not plot probability per sample. Write to TSV only. [off=0,on=1](default: %(default)s)')
-    parser.add_argument('-m', type=int, default=1000, metavar='Minimum Mapped Reads',
+    parser.add_argument('-m', type=int, default=1000, metavar='MINIMUM MAPPED READS',
                         help='Require at least m reads to be mapped to a reference to be included in clustering (default: %(default)s)')
-    parser.add_argument('-single', type=int, default=0, metavar='ss-Library only',
+    parser.add_argument('-single', type=int, default=0, metavar='SS-LIBRARY ONLY',
                         help='Set to 1 if reads are single strand library (default: %(default)s)')
-    parser.add_argument('-plotall', type=int, default=0, metavar='Plot All Profs',
+    parser.add_argument('-plotall', type=int, default=0, metavar='PLOT ALL PROFS',
                         help='Set to 1 if all profs should be plotted individually. Slow! (default: %(default)s)')
-    parser.add_argument('-mixed', type=int, default=0, metavar='ss- and paired-end Input',
-                        help='Set to 1 if input are bam files from ss- and paired-end libraries. (default: %(default)s)')
     parser.add_argument('-lib', choices=['single', 'paired', 'mixed'], default='paired', help=('Type of library reads in your input BAMs. (default: %(default)s)')
     )
 
