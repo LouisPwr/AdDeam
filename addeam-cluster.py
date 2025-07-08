@@ -764,8 +764,6 @@ def main():
                         help='Do not plot probability per sample. Write to TSV only. [off=0,on=1](default: %(default)s)')
     parser.add_argument('-m', type=int, default=1000, metavar='MINIMUM MAPPED READS',
                         help='Require at least m reads to be mapped to a reference to be included in clustering (default: %(default)s)')
-    parser.add_argument('-single', type=int, default=0, metavar='SS-LIBRARY ONLY',
-                        help='Set to 1 if reads are single strand library (default: %(default)s)')
     parser.add_argument('-plotall', type=int, default=0, metavar='PLOT ALL PROFS',
                         help='Set to 1 if all profs should be plotted individually. Slow! (default: %(default)s)')
     parser.add_argument('-lib', choices=['single', 'paired', 'mixed'], default='paired', help=('Type of library reads in your input BAMs. (default: %(default)s)')
@@ -778,7 +776,6 @@ def main():
     cluster_k = args.k
     less_plots = args.q
     min_map = args.m
-    #single_strand_flag = args.single
     all_plots_flag = args.plotall
     libtype = args.lib
 
