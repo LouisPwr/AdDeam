@@ -1,3 +1,5 @@
+[![Anaconda](https://anaconda.org/bioconda/addeam/badges/version.svg)](https://anaconda.org/bioconda/addeam) [![BioConda Install](https://anaconda.org/bioconda/addeam/badges/downloads.svg)](https://anaconda.org/bioconda/addeam)
+
 # AdDeam
 
 AdDeam is a new tool designed to take a list of BAM files as input and generate damage profiles, which can be visualized to group similar profiles together. AdDeam uses a modified version of `bam2prof` (https://github.com/grenaud/bam2prof).
