@@ -154,20 +154,19 @@ Clustering:
 
 ## Citing
 
-Until the article is published, please cite:
-
-AdDeam: A Fast and Scalable Tool for Estimating and Clustering Reference-Level Damage Profiles Louis Kraft, Thorfinn Sand Korneliussen, Peter Wadd Sackett, Gabriel Renaud *bioRxiv* 2025.03.20.644297; doi: https://doi.org/10.1101/2025.03.20.644297
+AdDeam: A Fast and Scalable Tool for Estimating and Clustering Reference-Level Damage Profiles Louis Kraft, Thorfinn Sand Korneliussen, Peter Wadd Sackett, Gabriel Renaud, *Bioinformatics*; doi: [https://doi.org/10.1101/2025.03.20.644297](https://doi.org/10.1093/bioinformatics/btaf407)
 
 or in Bibtex:
 
-    @article {Kraft2025.03.20.644297,
-    	author = {{Kraft, Louis and Korneliussen, Thorfinn Sand and Sackett, Peter Wadd and Renaud, Gabriel}], 
- 	    title = {{AdDeam: A Fast and Scalable Tool for Estimating and Clustering Reference-Level Damage Profiles}},
-	    elocation-id = {2025.03.20.644297},
-	    year = {2025},
-	    doi = {10.1101/2025.03.20.644297},
-	    publisher = {Cold Spring Harbor Laboratory},	   
-	    URL = {https://www.biorxiv.org/content/early/2025/03/24/2025.03.20.644297},
-	    eprint = {https://www.biorxiv.org/content/early/2025/03/24/2025.03.20.644297.full.pdf},
-	    journal = {bioRxiv}
-    }
+    @article{Kraft2025,
+    title = {AdDeam: a fast and scalable tool for estimating and clustering reference-level damage profiles},
+    volume = {41},
+    DOI = {10.1093/bioinformatics/btaf407},
+    number = {8},
+    journal = {Bioinformatics},
+    publisher = {Oxford University Press (OUP)},
+    author = {Kraft,  Louis and Korneliussen,  Thorfinn Sand and Sackett,  Peter Wad and Renaud,  Gabriel},
+    editor = {Alkan,  Can},
+    year = {2025},
+    month = jul 
+}
